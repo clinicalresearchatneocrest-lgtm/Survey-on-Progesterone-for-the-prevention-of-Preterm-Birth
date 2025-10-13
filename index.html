@@ -20,11 +20,39 @@
     #errbox { background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:12px; border-radius:8px; margin:12px 0; display:none; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   </style>
 
-  <!-- Default font family (SurveyJS will still re-render; we reinforce in JS below) -->
-  <style>
-    .sd-root-modern, .sv-root {
-      --sjs-font-family: "Questrial", Arial, sans-serif;
-      font-family: var(--sjs-font-family) !important;
+  <!-- High-specificity CSS backup (Title 14px, Description 12px) -->
+  <style id="force-header-fonts">
+    #surveyContainer .sd-header__text .sd-title,
+    #surveyContainer .sd-header .sd-title,
+    #surveyContainer .sv-header__title,
+    #surveyContainer h3.sv-title,
+    #surveyContainer .sd-typography-h3,
+    #surveyContainer .sd-typography--h3 {
+      font-size:14px !important;
+      font-family:"Questrial", Arial, sans-serif !important;
+      font-weight:400 !important;
+      line-height:1.35 !important;
+      letter-spacing:0.2px !important;
+      margin:0 0 6px 0 !important;
+    }
+    #surveyContainer .sd-header__text .sd-description,
+    #surveyContainer .sd-header .sd-description,
+    #surveyContainer .sv-description,
+    #surveyContainer .sd-typography-body {
+      font-size:12px !important;
+      font-family:"Questrial", Arial, sans-serif !important;
+      line-height:1.5 !important;
+      color:#333 !important;
+    }
+    /* Page titles (“Consent”, etc.) – match 14px */
+    #surveyContainer h3.sd-title.sd-page__title,
+    #surveyContainer .sd-page__title,
+    #surveyContainer h3.sv-page__title,
+    #surveyContainer .sv_page_title {
+      font-size:14px !important;
+      font-family:"Questrial", Arial, sans-serif !important;
+      font-weight:400 !important;
+      line-height:1.35 !important;
     }
   </style>
 </head>
@@ -48,7 +76,7 @@
       showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
     });
 
-    // === Your full Survey JSON (with Q13 restored; NA kept removed in molecule) ===
+    // === Survey JSON (nothing removed) ===
     const surveyJson = {
       "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
       "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -149,7 +177,10 @@
                   "title": "Use of Progesterone",
                   "cellType": "radiogroup",
                   "isRequired": true,
-                  "choices": [ { "value": 1, "text": "Yes" }, { "value": 2, "text": "No" } ],
+                  "choices": [
+                    { "value": 1, "text": "Yes" },
+                    { "value": 2, "text": "No" }
+                  ],
                   "allowClear": true
                 },
                 {
@@ -179,8 +210,8 @@
                   "cellType": "dropdown",
                   "isRequired": true,
                   "visibleIf": "{row.useProg} = 1",
-                  "enableIf": "{row.useProg} = 1 and {row.molecule} <> 'Other'",
-                  "resetValueIf": "{row.molecule} = 'Other'",
+                  "enableIf": "{row.useProg} = 1 and {row.molecule} != 'other'",
+                  "resetValueIf": "{row.molecule} = 'other'",
                   "choices": [
                     { "value": "10 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
                     { "value": "10 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
@@ -333,7 +364,7 @@
 
       const survey = new Survey.Model(surveyJson);
 
-      // Send to Google Sheets (unchanged)
+      // --- send to Google Sheets (unchanged) ---
       const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
       survey.onComplete.add(async ({ data }) => {
         try {
@@ -355,66 +386,75 @@
       const target = document.getElementById("surveyContainer");
       survey.render(target);
 
-      // Inject a final <style> after SurveyJS CSS so we win the cascade
-      const styleTag = document.createElement('style');
-      styleTag.id = 'force-header-fonts';
-      styleTag.textContent = `
-#surveyContainer .sd-header__text .sd-title,
-#surveyContainer .sd-header .sd-title,
-#surveyContainer .sv-header__title,
-#surveyContainer h3.sv-title { font-size:12px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.35 !important; }
+      // === Bullet-proof font-size forcing (Title 14px, Description 12px) ===
+      const applyHeaderSizes = () => {
+        // Set global font family token on modern theme root if present
+        const root = document.querySelector('#surveyContainer .sd-root-modern, #surveyContainer .sv-root');
+        if (root) {
+          root.style.setProperty('--sjs-font-family', '"Questrial", Arial, sans-serif');
+        }
 
-#surveyContainer .sd-header__text .sd-description,
-#surveyContainer .sd-header .sd-description,
-#surveyContainer .sv-description { font-size:10px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.5 !important; color:#333 !important; }
+        // Title
+        const titleSel = [
+          '#surveyContainer .sd-header__text .sd-title',
+          '#surveyContainer .sd-header .sd-title',
+          '#surveyContainer .sv-header__title',
+          '#surveyContainer h3.sv-title',
+          '#surveyContainer .sd-typography-h3',
+          '#surveyContainer .sd-typography--h3'
+        ].join(', ');
+        document.querySelectorAll(titleSel).forEach(el => {
+          el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
+          el.style.setProperty('font-size', '14px', 'important');
+          el.style.setProperty('font-weight', '400', 'important');
+          el.style.setProperty('line-height', '1.35', 'important');
+          el.style.setProperty('letter-spacing', '0.2px', 'important');
+          el.style.setProperty('margin', '0 0 6px 0', 'important');
+        });
 
-#surveyContainer h3.sd-title.sd-page__title,
-#surveyContainer .sd-page__title,
-#surveyContainer h3.sv-page__title,
-#surveyContainer .sv_page_title { font-size:12px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.35 !important; }
-      `;
-      document.head.appendChild(styleTag);
+        // Description
+        const descSel = [
+          '#surveyContainer .sd-header__text .sd-description',
+          '#surveyContainer .sd-header .sd-description',
+          '#surveyContainer .sv-description',
+          '#surveyContainer .sd-typography-body'
+        ].join(', ');
+        document.querySelectorAll(descSel).forEach(el => {
+          el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
+          el.style.setProperty('font-size', '12px', 'important');
+          el.style.setProperty('font-weight', '400', 'important');
+          el.style.setProperty('line-height', '1.5', 'important');
+          el.style.setProperty('color', '#333', 'important');
+        });
 
-      // Also force inline (for themes that rebuild DOM)
-      const forceInline = () => {
-        const q = s => document.querySelectorAll(s);
-        q('#surveyContainer .sd-header__text .sd-title, #surveyContainer .sd-header .sd-title, #surveyContainer .sv-header__title, #surveyContainer h3.sv-title')
-          .forEach(el => {
-            el.style.setProperty('font-size', '12px', 'important');
-            el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
-            el.style.setProperty('font-weight', '400', 'important');
-            el.style.setProperty('line-height', '1.35', 'important');
-          });
-        q('#surveyContainer .sd-header__text .sd-description, #surveyContainer .sd-header .sd-description, #surveyContainer .sv-description')
-          .forEach(el => {
-            el.style.setProperty('font-size', '10px', 'important');
-            el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
-            el.style.setProperty('font-weight', '400', 'important');
-            el.style.setProperty('line-height', '1.5', 'important');
-            el.style.setProperty('color', '#333', 'important');
-          });
-        q('#surveyContainer h3.sd-title.sd-page__title, #surveyContainer .sd-page__title, #surveyContainer h3.sv-page__title, #surveyContainer .sv_page_title')
-          .forEach(el => {
-            el.style.setProperty('font-size', '12px', 'important');
-            el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
-            el.style.setProperty('font-weight', '400', 'important');
-            el.style.setProperty('line-height', '1.35', 'important');
-          });
+        // Page titles
+        const pageTitleSel = [
+          '#surveyContainer h3.sd-title.sd-page__title',
+          '#surveyContainer .sd-page__title',
+          '#surveyContainer h3.sv-page__title',
+          '#surveyContainer .sv_page_title'
+        ].join(', ');
+        document.querySelectorAll(pageTitleSel).forEach(el => {
+          el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
+          el.style.setProperty('font-size', '14px', 'important');
+          el.style.setProperty('font-weight', '400', 'important');
+          el.style.setProperty('line-height', '1.35', 'important');
+        });
       };
-      const apply = () => requestAnimationFrame(forceInline);
-      apply();
-      survey.onAfterRenderSurvey.add(apply);
-      survey.onAfterRenderPage.add(apply);
-      survey.onCurrentPageChanged.add(apply);
 
-      // If header gets replaced by theme, watch and re-apply
-      const header = document.querySelector('#surveyContainer .sd-header') || document.querySelector('#surveyContainer .sv-header');
-      if (header) {
-        const mo = new MutationObserver(apply);
-        mo.observe(header, { childList: true, subtree: true });
+      // Apply now and on re-renders
+      applyHeaderSizes();
+      survey.onAfterRenderSurvey.add(applyHeaderSizes);
+      survey.onAfterRenderPage.add(applyHeaderSizes);
+      survey.onCurrentPageChanged.add(applyHeaderSizes);
+
+      // Watch for header DOM mutations (themes sometimes rebuild nodes)
+      const container = document.getElementById('surveyContainer');
+      if (container) {
+        const mo = new MutationObserver(() => applyHeaderSizes());
+        mo.observe(container, { childList: true, subtree: true });
       }
     });
   </script>
 </body>
 </html>
-
