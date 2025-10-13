@@ -22,26 +22,41 @@
   </style>
 
   <!-- Title (16px) and Description (12px) font overrides -->
-  <style>
-    .sd-root-modern, .sv-root {
-      --sjs-font-family: "Questrial", Arial, sans-serif;
-      font-family: var(--sjs-font-family) !important;
-    }
-    .sd-header .sd-title, .sv-header__title, .sv-title {
-      font-family: "Questrial", Arial, sans-serif !important;
-      font-size: 14px !important;
-      font-weight: 400 !important;
-      letter-spacing: 0.2px;
-      line-height: 1.35;
-    }
-    .sd-header .sd-description, .sv-description {
-      font-family: "Questrial", Arial, sans-serif !important;
-      font-size: 10px !important;
-      font-weight: 400 !important;
-      line-height: 1.5;
-      color: #333;
-    }
-  </style>
+ <style>
+  /* Use Questrial across survey root */
+  .sd-root-modern, .sv-root {
+    --sjs-font-family: "Questrial", Arial, sans-serif;
+    font-family: var(--sjs-font-family) !important;
+  }
+
+  /* Title (cover modern + legacy selectors) */
+  .sd-header__text .sd-title,
+  .sd-header .sd-title,
+  h3.sd-title,
+  .sd-title.sd-element__title,
+  .sv-header__title,
+  .sv-title,
+  h3.sv-title {
+    font-family: "Questrial", Arial, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.2px;
+    margin: 0 0 6px 0 !important;
+  }
+
+  /* Description (cover modern + legacy selectors) */
+  .sd-header__text .sd-description,
+  .sd-header .sd-description,
+  .sd-description,
+  .sv-description {
+    font-family: "Questrial", Arial, sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    color: #333 !important;
+  }
+</style>
 </head>
 
 <body>
@@ -354,7 +369,29 @@
     document.addEventListener("DOMContentLoaded", () => {
       survey.render(document.getElementById("surveyContainer"));
     });
+    document.addEventListener("DOMContentLoaded", () => {
+  survey.render(document.getElementById("surveyContainer"));
+
+  // Force inline sizes in case a theme overrides later
+  requestAnimationFrame(() => {
+    const titleEl = document.querySelector('#surveyContainer .sd-header .sd-title, #surveyContainer .sv-title');
+    if (titleEl) {
+      titleEl.style.fontFamily = '"Questrial", Arial, sans-serif';
+      titleEl.style.fontSize = '16px';
+      titleEl.style.fontWeight = '400';
+      titleEl.style.lineHeight = '1.35';
+    }
+    const descEl = document.querySelector('#surveyContainer .sd-header .sd-description, #surveyContainer .sv-description');
+    if (descEl) {
+      descEl.style.fontFamily = '"Questrial", Arial, sans-serif';
+      descEl.style.fontSize = '12px';
+      descEl.style.fontWeight = '400';
+      descEl.style.lineHeight = '1.5';
+    }
+  });
+});
   </script>
 </body>
 </html>
+
 
