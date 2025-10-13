@@ -8,15 +8,36 @@
   <link href="https://unpkg.com/survey-core/survey-core.min.css" rel="stylesheet" />
   <script src="https://unpkg.com/survey-core/survey.core.min.js"></script>
   <script src="https://unpkg.com/survey-js-ui/survey-js-ui.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <style>
-    body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #surveyContainer { max-width: 960px; margin: 0 auto; }
-  </style>
-</head>
-<body>
-  <div id="surveyContainer"></div>
+  /* (optional) set survey root font var so SurveyJS respects it */
+  .sd-root-modern, .sv-root {
+    --sjs-font-family: "Questrial", Arial, sans-serif;
+    font-family: var(--sjs-font-family) !important;
+  }
 
-  <script>
+  /* Title (Survey header) */
+  .sd-header .sd-title,
+  .sv-header__title,
+  .sv-title {
+    font-family: "Questrial", Arial, sans-serif !important;
+    font-size: 14px !important;  /* <- your requested size */
+    font-weight: 400 !important;
+    letter-spacing: 0.2px;
+    line-height: 1.35;
+  }
+
+  /* Description (Survey header) */
+  .sd-header .sd-description,
+  .sv-description {
+    font-family: "Questrial", Arial, sans-serif !important;
+    font-size: 12px !important;  /* <- your requested size */
+    font-weight: 400 !important;
+    line-height: 1.5;
+    color: #333;
+  }
+</style>
+    <script>
     // 1) PASTE your full SurveyJS JSON (the one with molecule-based dose filtering) below:
     const surveyJson = {
   "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
@@ -609,28 +630,6 @@
   </script>
 </body>
 </html>
-<style>
-  /* Title (Survey header) */
-  .sd-header .sd-title,
-  .sv-header__title,
-  .sv-title {
-    font-family: "Questrial", Arial, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    letter-spacing: 0.2px;
-    line-height: 1.35;
-  }
-
-  /* Description (Survey header) */
-  .sd-header .sd-description,
-  .sv-description {
-    font-family: "Questrial", Arial, sans-serif !important;
-    font-size: 10px !important;
-    font-weight: 400 !important;
-    line-height: 1.5;
-    color: #333;
-  }
-</style>
 
 
 
