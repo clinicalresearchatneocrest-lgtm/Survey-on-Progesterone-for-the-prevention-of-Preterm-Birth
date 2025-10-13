@@ -191,8 +191,7 @@
                     "Oral Progesterone",
                     "Dydrogesterone",
                     "Injectable progesterone",
-                    "Injectable Hydroxy progesterone",
-                    "Other"
+                    "Injectable Hydroxy progesterone"
                   ],
                   "showOtherItem": true,
                   "otherText": "Other (please specify)",
@@ -379,6 +378,43 @@
       if (!target) return;
       survey.render(target);
     });
-  </script>
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const target = document.getElementById("surveyContainer");
+  if (!target) return;
+  survey.render(target);
+
+  // Force sizes after render so no theme can override it later
+  requestAnimationFrame(() => {
+    // Survey header title (top bar)
+    document.querySelectorAll('#surveyContainer .sd-header h3.sd-title, #surveyContainer h3.sv-title')
+      .forEach(el => {
+        el.style.fontFamily = '"Questrial", Arial, sans-serif';
+        el.style.fontSize = '14px';
+        el.style.fontWeight = '400';
+        el.style.lineHeight = '1.35';
+      });
+
+    // Survey header description
+    document.querySelectorAll('#surveyContainer .sd-header .sd-description, #surveyContainer .sv-description')
+      .forEach(el => {
+        el.style.fontFamily = '"Questrial", Arial, sans-serif';
+        el.style.fontSize = '12px';
+        el.style.fontWeight = '400';
+        el.style.lineHeight = '1.5';
+      });
+
+    // Page titles (“Consent”, etc.)
+    document.querySelectorAll('#surveyContainer h3.sd-title.sd-page__title, #surveyContainer .sd-page__title, #surveyContainer .sv_page_title')
+      .forEach(el => {
+        el.style.fontFamily = '"Questrial", Arial, sans-serif';
+        el.style.fontSize = '14px';
+        el.style.fontWeight = '400';
+        el.style.lineHeight = '1.35';
+      });
+  });
+});
+</script>
 </body>
 </html>
+
