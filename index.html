@@ -20,13 +20,12 @@
     #errbox { background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:12px; border-radius:8px; margin:12px 0; display:none; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   </style>
 
-  <!-- Font overrides: title 14px, description 12px -->
+  <!-- CSS defaults (title 14px, description 12px). JS below will reinforce with !important inline. -->
   <style>
     .sd-root-modern, .sv-root {
       --sjs-font-family: "Questrial", Arial, sans-serif;
       font-family: var(--sjs-font-family) !important;
     }
-    /* Survey header title (top) */
     #surveyContainer .sd-header h3.sd-title,
     #surveyContainer .sv-header__title,
     #surveyContainer h3.sv-title {
@@ -37,7 +36,6 @@
       letter-spacing: 0.2px;
       margin: 0 0 6px 0 !important;
     }
-    /* Survey header description */
     #surveyContainer .sd-header .sd-description,
     #surveyContainer .sv-description {
       font-family: "Questrial", Arial, sans-serif !important;
@@ -46,7 +44,6 @@
       line-height: 1.5 !important;
       color: #333 !important;
     }
-    /* Page titles (“Consent”, etc.) */
     #surveyContainer h3.sd-title.sd-page__title,
     #surveyContainer .sd-page__title,
     #surveyContainer h3.sv-page__title,
@@ -65,114 +62,317 @@
   <div id="surveyContainer"></div>
 
   <script>
-  // === show runtime errors on page ===
-  const showErr = (msg) => {
-    const box = document.getElementById("errbox");
-    box.style.display = "block";
-    box.textContent = msg;
-  };
-  window.addEventListener("error", e => {
-    showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
-  });
-  window.addEventListener("unhandledrejection", e => {
-    showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
-  });
-
-  // === Survey JSON (unchanged) ===
-  const surveyJson = /* your JSON object exactly as in your file */ <?/* keep your existing JSON here */?>;
-
-  // Create model + submit + render
-  document.addEventListener("DOMContentLoaded", () => {
-    if (!window.Survey || !Survey.Model) {
-      showErr("SurveyJS library did not load. Check that these return 200 in Network tab:\n- survey-core.min.js\n- survey-js-ui.min.js");
-      return;
-    }
-
-    const survey = new Survey.Model(surveyJson);
-
-    // --- send to Google Sheets (unchanged) ---
-    const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
-    survey.onComplete.add(async ({ data }) => {
-      try {
-        const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
-        const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
-        await fetch(SHEETS_WEB_APP_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        alert("Thanks! Your response has been recorded.");
-      } catch (err) {
-        console.error(err);
-        alert("Submitted, but we couldn't confirm the save.");
-      }
+    // === show runtime errors on page ===
+    const showErr = (msg) => {
+      const box = document.getElementById("errbox");
+      box.style.display = "block";
+      box.textContent = msg;
+    };
+    window.addEventListener("error", e => {
+      showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
+    });
+    window.addEventListener("unhandledrejection", e => {
+      showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
     });
 
-    const target = document.getElementById("surveyContainer");
-    survey.render(target);
-
-    // --- FORCE HEADER FONTS (bulletproof) ---
-    const forceHeaderFonts = () => {
-      // TITLE → 14px
-      const titleSel = [
-        '#surveyContainer .sd-header__text .sd-title',
-        '#surveyContainer .sd-header .sd-title',
-        '#surveyContainer .sv-header__title',
-        '#surveyContainer h3.sv-title'
-      ].join(', ');
-      document.querySelectorAll(titleSel).forEach(el => {
-        el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
-        el.style.setProperty('font-size', '14px', 'important');
-        el.style.setProperty('font-weight', '400', 'important');
-        el.style.setProperty('line-height', '1.35', 'important');
-      });
-
-      // DESCRIPTION → 12px
-      const descSel = [
-        '#surveyContainer .sd-header__text .sd-description',
-        '#surveyContainer .sd-header .sd-description',
-        '#surveyContainer .sv-description'
-      ].join(', ');
-      document.querySelectorAll(descSel).forEach(el => {
-        el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
-        el.style.setProperty('font-size', '12px', 'important');
-        el.style.setProperty('font-weight', '400', 'important');
-        el.style.setProperty('line-height', '1.5', 'important');
-        el.style.setProperty('color', '#333', 'important');
-      });
-
-      // PAGE TITLES (optional, 14px to match)
-      const pageTitleSel = [
-        '#surveyContainer h3.sd-title.sd-page__title',
-        '#surveyContainer .sd-page__title',
-        '#surveyContainer h3.sv-page__title',
-        '#surveyContainer .sv_page_title'
-      ].join(', ');
-      document.querySelectorAll(pageTitleSel).forEach(el => {
-        el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
-        el.style.setProperty('font-size', '14px', 'important');
-        el.style.setProperty('font-weight', '400', 'important');
-        el.style.setProperty('line-height', '1.35', 'important');
-      });
+    // === Survey JSON (with NA removed from molecule choices; dose disabled when molecule=Other) ===
+    const surveyJson = {
+      "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
+      "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
+      "pages": [
+        {
+          "name": "page1",
+          "title": "Consent",
+          "description": "To, \r\nCipla Ltd \r\nPeninsula Business Park \r\nGanpatrao Kadam Marg \r\nLower Parel, Mumbai – 400013 \r\n\r\nDear Sir/Madam,\r\nI understand that the objective of this survey is to understand the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth. I hereby agree to share my experience with Cipla Limited (hereinafter “Cipla”) and that Cipla shall have the unfettered right to use it in perpetuity, in all forms of media including but not limited to print, audio, video, website, internet and such other media which is in existence today for display, exhibition, broadcast, transmission, communication or any other media which may come into existence at a future date.\r\nI understand that Cipla shall have all rights to edit, reproduce, adapt, create derivative works or translate any information, views and opinion expressed by me as it deems fit, for the above-mentioned purpose, without my approval. I agree that this is not intended for any promotion or advertisement of any pharmaceutical product.\r\nI hereby confirm that I shall notify Cipla, if I attain a position to influence purchasing decisions of a government entity of health-care-related institution owned or substantially controlled by a government or public body. Such purchasing decisions may relate, for instance, to tenders issued by health authorities or decisions of formulary committees of public hospitals. Where such notification to Cipla is not permitted by local laws, regulations, I shall notify the purchase decision-maker in said government entity, institution or hospital of my relationship with Cipla before any purchasing decision is made.\r\nI am aware of and shall always abide by all the applicable laws governing medical professionals. I expressly release Cipla Limited, it’s employees, representatives, agents etc. from and against any and all claims arising out of the uses herein granted, including without limitation any claims for libel or violation of any right of publicity or privacy.\r\n\r\n\r\nDATA COLLECTION\r\nFill the e-questionnaire form provided to you. The e-questionnaire filled by you will be sent to a statistical agency for data entry and statistical analysis. The doctors will gain access to the e-survey on a dedicated link. The doctor will be prompted digitally to provide his consent and to complete the survey. The confidentiality of data would be maintained as the responses would be totally anonymous as they would be entered with each answer in the server. Proceeding to the next question (including concluding the survey) would be contingent upon answering its previous one, thus ensuring that all respondents answer all questions. The data captured on the Cipla server would only be shared with a statistical agency for analysis. Following doctor data will be collected as a part of the survey – \r\n1.\tDoctor name, age\r\n2.\tName of hospital \r\n3.\tState, city/town\r\n4.\tQualification\r\n5.\tPractice setting \r\n6.\tYears of practice\n",
+          "elements": [
+            {
+              "type":"checkbox","name":"question2",
+              "title":"DATA SHARING CONSENT DECLARATION BY HEALTH CARE PROFESSIONAL\nKindly sign below after agreeing on each of the statement.",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"I confirm that I have read and understood the survey protocol."},
+                {"value":"Item 2","text":"I agree not to restrict the use of any data or results that arise from this survey provided such a use is only for scientific purpose(s)."},
+                {"value":"Item 3","text":"I agree to share medical data for the above survey."}
+              ],
+              "maxSelectedChoices":3,"minSelectedChoices":3
+            },
+            { "type":"text","name":"question1","title":"Name of the healthcare professional","isRequired":true },
+            { "type":"signaturepad","name":"question3","title":"Signature","isRequired":true },
+            { "type":"text","name":"question4","title":"Date","isRequired":true,"inputType":"date" }
+          ]
+        },
+        {
+          "name":"page2",
+          "elements":[
+            {
+              "type":"radiogroup","name":"question5",
+              "title":"1. Out of total deliveries at your hospital, approximately what percentage of deliveries are pre-term?",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"0-5%"},
+                {"value":"Item 2","text":"6-10%"},
+                {"value":"Item 3","text":"11-15%"},
+                {"value":"Item 4","text":"16-20%"},
+                {"value":"Item 5","text":">20%"}]
+            },
+            {
+              "type":"radiogroup","name":"question6",
+              "title":"2. In your practice, approximately what percentage of pregnancies need treatment for prevention of pre-term delivery?",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"<10%"},
+                {"value":"Item 2","text":"10-20%"},
+                {"value":"Item 3","text":"21-30%"},
+                {"value":"Item 4","text":"31-40%"},
+                {"value":"Item 5","text":">40%"}]
+            },
+            {
+              "type":"checkbox","name":"question7",
+              "title":"3. Common risk factors related to pre-term delivery (please tick top 3)",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"History of previous pre-term"},
+                {"value":"Item 2","text":"Multiple gestation"},
+                {"value":"Item 3","text":"Short cervix (< 2.5 cm)"},
+                {"value":"Item 4","text":"Preeclampsia"},
+                {"value":"Item 5","text":"Infections"},
+                {"value":"Item 6","text":"Gestational diabetes"},
+                {"value":"Item 7","text":"Spontaneous Pre-term (Idiopathic)"}],
+              "maxSelectedChoices":3,"minSelectedChoices":3
+            },
+            {
+              "type":"checkbox","name":"question8",
+              "title":"4. Preferred route of progesterone support? (maximum two options can be selected)",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"Vaginal"},
+                {"value":"Item 2","text":"Oral"},
+                {"value":"Item 3","text":"Injectable"},
+                {"value":"Item 4","text":"Rectal"},
+                {"value":"Item 5","text":"Vaginal + Injectable"},
+                {"value":"Item 6","text":"Oral + Injectable"}],
+              "showOtherItem":true,"maxSelectedChoices":2,"minSelectedChoices":1
+            },
+            {
+              "type":"matrixdropdown",
+              "name":"q5_progesterone",
+              "title":"5. Do you use progesterone for the following factors for Pre-term birth? If yes, select the first choice molecule and dosage.",
+              "columns":[
+                { "name":"useProg","title":"Use of Progesterone","cellType":"radiogroup","isRequired":true,"choices":[{"value":1,"text":"Yes"},{"value":2,"text":"No"}],"allowClear":true },
+                {
+                  "name":"molecule","title":"First choice molecule","cellType":"dropdown","isRequired":true,"visibleIf":"{row.useProg} = 1",
+                  "choices":[
+                    "Vaginal Natural micronized progesterone",
+                    "Vaginal gel",
+                    "Oral Progesterone",
+                    "Dydrogesterone",
+                    "Injectable progesterone",
+                    "Injectable Hydroxy progesterone"
+                  ],
+                  "showOtherItem": true,
+                  "otherText": "Other (please specify)",
+                  "otherPlaceholder": "Please specify molecule",
+                  "storeOthersAsComment": true,
+                  "allowClear": true,
+                  "placeholder": "Select..."
+                },
+                {
+                  "name":"dose","title":"Dose","cellType":"dropdown","isRequired":true,"visibleIf":"{row.useProg} = 1",
+                  "enableIf":"{row.useProg} = 1 and {row.molecule} <> 'Other'",
+                  "resetValueIf":"{row.molecule} = 'Other'",
+                  "choices":[
+                    {"value":"10 mg BID","visibleIf":"{row.molecule} = 'Dydrogesterone'"},
+                    {"value":"10 mg TID","visibleIf":"{row.molecule} = 'Dydrogesterone'"},
+                    {"value":"200 mg BID","visibleIf":"{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'"},
+                    {"value":"200 mg TID","visibleIf":"{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'"},
+                    {"value":"300 mg BID","visibleIf":"{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'"},
+                    {"value":"300 mg TID","visibleIf":"{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'"},
+                    {"value":"400 mg BID","visibleIf":"{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'"},
+                    {"value":"400 mg TID","visibleIf":"{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'"},
+                    {"value":"25 mg","visibleIf":"{row.molecule} = 'Injectable progesterone'"},
+                    {"value":"50 mg","visibleIf":"{row.molecule} = 'Injectable progesterone' or {row.molecule} = 'Injectable Hydroxy progesterone'"},
+                    {"value":"100 mg","visibleIf":"{row.molecule} = 'Injectable progesterone'"},
+                    {"value":"250 mg","visibleIf":"{row.molecule} = 'Injectable Hydroxy progesterone'"},
+                    {"value":"500 mg","visibleIf":"{row.molecule} = 'Injectable Hydroxy progesterone'"},
+                    {"value":"NA","visibleIf":"{row.molecule} = 'Vaginal gel'"}
+                  ],
+                  "placeholder":"Select..."
+                }
+              ],
+              "rows":[
+                {"value":"r1","text":"Previous H/o of Preterm labor"},
+                {"value":"r2","text":"Multiple Gestation"},
+                {"value":"r3","text":"Short cervix"},
+                {"value":"r4","text":"Bleeding during 2nd or 3rd Trimester"},
+                {"value":"r5","text":"Intrauterine Growth Restriction"},
+                {"value":"r6","text":"Oligohydramnios"},
+                {"value":"r7","text":"Pregnancy induced hypertension/ Pre-eclampsia"},
+                {"value":"r8","text":"Uterine infections"},
+                {"value":"r9","text":"Preterm Prelabor Rupture of Membranes"},
+                {"value":"r10","text":"Gestational diabetes"},
+                {"value":"r11","text":"Anatomical variation / deformities"}
+              ]
+            },
+            {
+              "type":"checkbox","name":"question9",
+              "title":"6. What common side effects do you come across with Injectable (IM/SC) progesterone supplementation? (select maximum 3 options)",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 4","text":"Pain"},
+                {"value":"Item 5","text":"Swelling / Inflammation"},
+                {"value":"Item 6","text":"Itching"},
+                {"value":"Item 7","text":"Skin rashes"},
+                {"value":"Item 8","text":"Nausea / Vomiting"},
+                {"value":"Item 9","text":"Breast pain / tenderness"},
+                {"value":"Item 10","text":"Drowsiness or giddiness"},
+                {"value":"Item 11","text":"Migraine / headache"}],
+              "maxSelectedChoices":3,"minSelectedChoices":1
+            },
+            {
+              "type":"checkbox","name":"question10",
+              "title":"7. What common side effects do you come across with Natural micronized progesterone vaginal capsule? (select maximum 3 options)",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"Soreness"},
+                {"value":"Item 2","text":"Diarrhoea"},
+                {"value":"Item 3","text":"Flatulence"},
+                {"value":"Item 4","text":"Vaginal irritation"},
+                {"value":"Item 5","text":"Dryness"},
+                {"value":"Item 6","text":"Spotting"},
+                {"value":"Item 7","text":"Skin rashes"}],
+              "maxSelectedChoices":3,"minSelectedChoices":1
+            },
+            {
+              "type":"checkbox","name":"question11",
+              "title":"8. What common side effects do you come across with Natural micronized progesterone vaginal – Oral tablet? (select maximum 3 options)",
+              "isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"Vaginal hemorrhage"},
+                {"value":"Item 2","text":"Migraine / headache"},
+                {"value":"Item 3","text":"Drowsiness or giddiness"},
+                {"value":"Item 4","text":"Nausea / Vomiting"},
+                {"value":"Item 5","text":"Abdominal pain / bloating"},
+                {"value":"Item 6","text":"Breast pain / tenderness"}],
+              "maxSelectedChoices":3,"minSelectedChoices":1
+            }
+          ]
+        },
+        {
+          "name":"page3",
+          "elements":[
+            { "type":"text","name":"question12","title":"Email-id","isRequired":true },
+            { "type":"text","name":"question15","title":"Age","isRequired":true },
+            { "type":"radiogroup","name":"question16","title":"Years of clinical experience","isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"<5 years"},
+                {"value":"Item 2","text":"5-10 years"},
+                {"value":"Item 3","text":"11-20 years"},
+                {"value":"Item 4","text":">20 years"}]
+            },
+            { "type":"checkbox","name":"question17","title":"Pre-dominant type of practice","isRequired":true,
+              "choices":[
+                {"value":"Item 1","text":"Multi-specialty Hospital"},
+                {"value":"Item 2","text":"Clinic / Nursing Home"},
+                {"value":"Item 3","text":"Government Hospital / Medical College"},
+                {"value":"Item 4","text":"Mixed Practice"}],
+              "minSelectedChoices":1,"maxSelectedChoices":1
+            },
+            { "type":"text","name":"question14","title":"Address (City and State)","isRequired":true }
+          ]
+        }
+      ],
+      "headerView": "advanced"
     };
 
-    // apply now
-    forceHeaderFonts();
+    // Create model + submit + render
+    document.addEventListener("DOMContentLoaded", () => {
+      if (!window.Survey || !Survey.Model) {
+        showErr("SurveyJS library did not load. Check that these return 200 in Network tab:\n- survey-core.min.js\n- survey-js-ui.min.js");
+        return;
+      }
 
-    // re-apply on any SurveyJS re-render
-    survey.onAfterRenderSurvey.add(forceHeaderFonts);
-    survey.onAfterRenderPage.add(forceHeaderFonts);
-    survey.onCurrentPageChanged.add(forceHeaderFonts);
+      const survey = new Survey.Model(surveyJson);
 
-    // re-apply if the header DOM mutates (some themes replace nodes)
-    const header = document.querySelector('#surveyContainer .sd-header') || document.querySelector('#surveyContainer .sv-header');
-    if (header) {
-      const mo = new MutationObserver(() => forceHeaderFonts());
-      mo.observe(header, { childList: true, subtree: true });
-    }
-  });
-</script>
+      // Send to Google Sheets (unchanged)
+      const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
+      survey.onComplete.add(async ({ data }) => {
+        try {
+          const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
+          const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
+          await fetch(SHEETS_WEB_APP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+          alert("Thanks! Your response has been recorded.");
+        } catch (err) {
+          console.error(err);
+          alert("Submitted, but we couldn't confirm the save.");
+        }
+      });
+
+      const target = document.getElementById("surveyContainer");
+      survey.render(target);
+
+      // Force font sizes after render (and on page change)
+      const forceHeaderFonts = () => {
+        requestAnimationFrame(() => {
+          // TITLE 14px
+          const titleSel = [
+            '#surveyContainer .sd-header__text .sd-title',
+            '#surveyContainer .sd-header .sd-title',
+            '#surveyContainer .sv-header__title',
+            '#surveyContainer h3.sv-title'
+          ].join(', ');
+          document.querySelectorAll(titleSel).forEach(el => {
+            el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
+            el.style.setProperty('font-size', '14px', 'important');
+            el.style.setProperty('font-weight', '400', 'important');
+            el.style.setProperty('line-height', '1.35', 'important');
+          });
+
+          // DESCRIPTION 12px
+          const descSel = [
+            '#surveyContainer .sd-header__text .sd-description',
+            '#surveyContainer .sd-header .sd-description',
+            '#surveyContainer .sv-description'
+          ].join(', ');
+          document.querySelectorAll(descSel).forEach(el => {
+            el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
+            el.style.setProperty('font-size', '12px', 'important');
+            el.style.setProperty('font-weight', '400', 'important');
+            el.style.setProperty('line-height', '1.5', 'important');
+            el.style.setProperty('color', '#333', 'important');
+          });
+
+          // PAGE TITLES 14px
+          const pageTitleSel = [
+            '#surveyContainer h3.sd-title.sd-page__title',
+            '#surveyContainer .sd-page__title',
+            '#surveyContainer h3.sv-page__title',
+            '#surveyContainer .sv_page_title'
+          ].join(', ');
+          document.querySelectorAll(pageTitleSel).forEach(el => {
+            el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
+            el.style.setProperty('font-size', '14px', 'important');
+            el.style.setProperty('font-weight', '400', 'important');
+            el.style.setProperty('line-height', '1.35', 'important');
+          });
+        });
+      };
+      forceHeaderFonts();
+      survey.onAfterRenderSurvey.add(forceHeaderFonts);
+      survey.onAfterRenderPage.add(forceHeaderFonts);
+      survey.onCurrentPageChanged.add(forceHeaderFonts);
+
+      // Re-apply if header DOM mutates
+      const header = document.querySelector('#surveyContainer .sd-header') || document.querySelector('#surveyContainer .sv-header');
+      if (header) {
+        const mo = new MutationObserver(() => forceHeaderFonts());
+        mo.observe(header, { childList: true, subtree: true });
+      }
+    });
+  </script>
 </body>
 </html>
-
