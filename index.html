@@ -15,28 +15,16 @@
 
   <!-- Basic page styles + container -->
   <style>
-    body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #surveyContainer { max-width: 960px; margin: 0 auto; }
-    /* Optional error box so you can SEE any JS errors right on the page */
-    #errbox { background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:12px; border-radius:8px; margin:12px 0; display:none; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  </style>
-
-  <!-- Title (16px) and Description (12px) font overrides -->
- <style>
-  /* Use Questrial across survey root */
+  /* keep your global font */
   .sd-root-modern, .sv-root {
     --sjs-font-family: "Questrial", Arial, sans-serif;
     font-family: var(--sjs-font-family) !important;
   }
 
-  /* Title (cover modern + legacy selectors) */
-  .sd-header__text .sd-title,
-  .sd-header .sd-title,
-  h3.sd-title,
-  .sd-title.sd-element__title,
-  .sv-header__title,
-  .sv-title,
-  h3.sv-title {
+  /* SURVEY HEADER title (top bar) → 16px */
+  #surveyContainer .sd-header h3.sd-title,
+  #surveyContainer .sv-header__title,
+  #surveyContainer h3.sv-title {
     font-family: "Questrial", Arial, sans-serif !important;
     font-size: 14px !important;
     font-weight: 400 !important;
@@ -45,16 +33,26 @@
     margin: 0 0 6px 0 !important;
   }
 
-  /* Description (cover modern + legacy selectors) */
-  .sd-header__text .sd-description,
-  .sd-header .sd-description,
-  .sd-description,
-  .sv-description {
+  /* SURVEY HEADER description → 12px (already working) */
+  #surveyContainer .sd-header .sd-description,
+  #surveyContainer .sv-description {
     font-family: "Questrial", Arial, sans-serif !important;
     font-size: 12px !important;
     font-weight: 400 !important;
     line-height: 1.5 !important;
     color: #333 !important;
+  }
+
+  /* PAGE TITLE (“Consent”, etc.). If you ALSO want this smaller, keep this block.
+     If you want only the header small, delete this block. */
+  #surveyContainer h3.sd-title.sd-page__title,
+  #surveyContainer .sd-page__title,
+  #surveyContainer h3.sv-page__title,
+  #surveyContainer .sv_page_title {
+    font-family: "Questrial", Arial, sans-serif !important;
+    font-size: 14px !important;   /* set the size you want for page titles */
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
   }
 </style>
 </head>
@@ -372,27 +370,33 @@
     document.addEventListener("DOMContentLoaded", () => {
   survey.render(document.getElementById("surveyContainer"));
 
-  // Force inline sizes in case a theme overrides later
+ document.addEventListener("DOMContentLoaded", () => {
+  survey.render(document.getElementById("surveyContainer"));
+
+  // Make sure both header title and page title get your size
   requestAnimationFrame(() => {
-    const titleEl = document.querySelector('#surveyContainer .sd-header .sd-title, #surveyContainer .sv-title');
-    if (titleEl) {
-      titleEl.style.fontFamily = '"Questrial", Arial, sans-serif';
-      titleEl.style.fontSize = '14px';
-      titleEl.style.fontWeight = '400';
-      titleEl.style.lineHeight = '1.35';
+    // Header title (top bar)
+    const headerTitle = document.querySelector('#surveyContainer .sd-header h3.sd-title, #surveyContainer h3.sv-title');
+    if (headerTitle) {
+      headerTitle.style.fontFamily = '"Questrial", Arial, sans-serif';
+      headerTitle.style.fontSize = '14px';
+      headerTitle.style.fontWeight = '400';
+      headerTitle.style.lineHeight = '1.35';
     }
-    const descEl = document.querySelector('#surveyContainer .sd-header .sd-description, #surveyContainer .sv-description');
-    if (descEl) {
-      descEl.style.fontFamily = '"Questrial", Arial, sans-serif';
-      descEl.style.fontSize = '12px';
-      descEl.style.fontWeight = '400';
-      descEl.style.lineHeight = '1.5';
+    // Page title (“Consent”, etc.)
+    const pageTitle = document.querySelector('#surveyContainer h3.sd-title.sd-page__title, #surveyContainer .sd-page__title, #surveyContainer .sv_page_title');
+    if (pageTitle) {
+      pageTitle.style.fontFamily = '"Questrial", Arial, sans-serif';
+      pageTitle.style.fontSize = '14px'; // change if you want a different size than header
+      pageTitle.style.fontWeight = '400';
+      pageTitle.style.lineHeight = '1.35';
     }
   });
 });
   </script>
 </body>
 </html>
+
 
 
 
