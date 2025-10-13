@@ -362,16 +362,16 @@
 #surveyContainer .sd-header__text .sd-title,
 #surveyContainer .sd-header .sd-title,
 #surveyContainer .sv-header__title,
-#surveyContainer h3.sv-title { font-size:14px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.35 !important; }
+#surveyContainer h3.sv-title { font-size:12px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.35 !important; }
 
 #surveyContainer .sd-header__text .sd-description,
 #surveyContainer .sd-header .sd-description,
-#surveyContainer .sv-description { font-size:12px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.5 !important; color:#333 !important; }
+#surveyContainer .sv-description { font-size:10px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.5 !important; color:#333 !important; }
 
 #surveyContainer h3.sd-title.sd-page__title,
 #surveyContainer .sd-page__title,
 #surveyContainer h3.sv-page__title,
-#surveyContainer .sv_page_title { font-size:14px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.35 !important; }
+#surveyContainer .sv_page_title { font-size:12px !important; font-family:"Questrial", Arial, sans-serif !important; font-weight:400 !important; line-height:1.35 !important; }
       `;
       document.head.appendChild(styleTag);
 
@@ -380,14 +380,14 @@
         const q = s => document.querySelectorAll(s);
         q('#surveyContainer .sd-header__text .sd-title, #surveyContainer .sd-header .sd-title, #surveyContainer .sv-header__title, #surveyContainer h3.sv-title')
           .forEach(el => {
-            el.style.setProperty('font-size', '14px', 'important');
+            el.style.setProperty('font-size', '12px', 'important');
             el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
             el.style.setProperty('font-weight', '400', 'important');
             el.style.setProperty('line-height', '1.35', 'important');
           });
         q('#surveyContainer .sd-header__text .sd-description, #surveyContainer .sd-header .sd-description, #surveyContainer .sv-description')
           .forEach(el => {
-            el.style.setProperty('font-size', '12px', 'important');
+            el.style.setProperty('font-size', '10px', 'important');
             el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
             el.style.setProperty('font-weight', '400', 'important');
             el.style.setProperty('line-height', '1.5', 'important');
@@ -395,7 +395,7 @@
           });
         q('#surveyContainer h3.sd-title.sd-page__title, #surveyContainer .sd-page__title, #surveyContainer h3.sv-page__title, #surveyContainer .sv_page_title')
           .forEach(el => {
-            el.style.setProperty('font-size', '14px', 'important');
+            el.style.setProperty('font-size', '12px', 'important');
             el.style.setProperty('font-family', '"Questrial", Arial, sans-serif', 'important');
             el.style.setProperty('font-weight', '400', 'important');
             el.style.setProperty('line-height', '1.35', 'important');
@@ -417,3 +417,4 @@
   </script>
 </body>
 </html>
+
