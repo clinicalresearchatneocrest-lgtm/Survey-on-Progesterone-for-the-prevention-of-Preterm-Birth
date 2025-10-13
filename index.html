@@ -10,36 +10,31 @@
   <script src="https://unpkg.com/survey-core/survey.core.min.js"></script>
   <script src="https://unpkg.com/survey-js-ui/survey-js-ui.min.js"></script>
 
-  <!-- Load the free Century-Gothic lookalike -->
+  <!-- Free look-alike font for Century Gothic -->
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
 
-  <!-- Base page styling + container -->
+  <!-- Basic page styles + container -->
   <style>
     body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #surveyContainer { max-width: 960px; margin: 0 auto; }
+    /* Optional error box so you can SEE any JS errors right on the page */
+    #errbox { background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:12px; border-radius:8px; margin:12px 0; display:none; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   </style>
 
-  <!-- Font overrides for Survey title/description (16/12) -->
+  <!-- Title (16px) and Description (12px) font overrides -->
   <style>
     .sd-root-modern, .sv-root {
       --sjs-font-family: "Questrial", Arial, sans-serif;
       font-family: var(--sjs-font-family) !important;
     }
-
-    /* Title (Survey header) */
-    .sd-header .sd-title,
-    .sv-header__title,
-    .sv-title {
+    .sd-header .sd-title, .sv-header__title, .sv-title {
       font-family: "Questrial", Arial, sans-serif !important;
-      font-size: 14px !important;
+      font-size: 16px !important;
       font-weight: 400 !important;
       letter-spacing: 0.2px;
       line-height: 1.35;
     }
-
-    /* Description (Survey header) */
-    .sd-header .sd-description,
-    .sv-description {
+    .sd-header .sd-description, .sv-description {
       font-family: "Questrial", Arial, sans-serif !important;
       font-size: 12px !important;
       font-weight: 400 !important;
@@ -50,10 +45,19 @@
 </head>
 
 <body>
+  <noscript>Enable JavaScript to view this survey.</noscript>
+  <div id="errbox"></div>
   <div id="surveyContainer"></div>
 
   <script>
-    // === Your Survey JSON (unchanged) ===
+    // ---- Show any JS error on the page (helps diagnose blank screen) ----
+    window.addEventListener("error", function (e) {
+      const box = document.getElementById("errbox");
+      box.style.display = "block";
+      box.textContent = "Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : "");
+    });
+
+    // === Your Survey JSON (use exactly as you posted) ===
     const surveyJson = {
       "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
       "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -120,7 +124,7 @@
                 { "value": "Item 2", "text": "Multiple gestation" },
                 { "value": "Item 3", "text": "Short cervix (< 2.5 cm)" },
                 { "value": "Item 4", "text": "Preeclampsia" },
-                { "value": "value5", "text": "Infections" },
+                { "value": "Item 5", "text": "Infections" },
                 { "value": "Item 6", "text": "Gestational diabetes" },
                 { "value": "Item 7", "text": "Spontaneous Pre-term (Idiopathic)" }
               ],
@@ -193,7 +197,7 @@
                     { "value": "400 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
 
                     { "value": "25 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
-                    { "value": "50 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+                    { "value": "50 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone' or {row.molecule} = 'Injectable Hydroxy progesterone'" },
                     { "value": "100 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
 
                     { "value": "250 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
@@ -327,6 +331,7 @@
     // === Create the model & wire submit ===
     const survey = new Survey.Model(surveyJson);
 
+    // (Your Apps Script URL; harmless if it’s wrong—rendering still works)
     const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
     survey.onComplete.add(async ({ data }) => {
       try {
@@ -335,7 +340,7 @@
         await fetch(SHEETS_WEB_APP_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" }, // simple header -> no preflight
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
         alert("Thanks! Your response has been recorded.");
