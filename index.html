@@ -13,48 +13,53 @@
   <!-- Free look-alike font for Century Gothic -->
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
 
-  <!-- Basic page styles + container -->
+  <!-- Base page styles -->
   <style>
-  /* keep your global font */
-  .sd-root-modern, .sv-root {
-    --sjs-font-family: "Questrial", Arial, sans-serif;
-    font-family: var(--sjs-font-family) !important;
-  }
+    body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #surveyContainer { max-width: 960px; margin: 0 auto; }
+    #errbox { background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:12px; border-radius:8px; margin:12px 0; display:none; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
 
-  /* SURVEY HEADER title (top bar) → 16px */
-  #surveyContainer .sd-header h3.sd-title,
-  #surveyContainer .sv-header__title,
-  #surveyContainer h3.sv-title {
-    font-family: "Questrial", Arial, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    line-height: 1.35 !important;
-    letter-spacing: 0.2px;
-    margin: 0 0 6px 0 !important;
-  }
+  <!-- Font overrides: title 14px, description 12px -->
+  <style>
+    .sd-root-modern, .sv-root {
+      --sjs-font-family: "Questrial", Arial, sans-serif;
+      font-family: var(--sjs-font-family) !important;
+    }
 
-  /* SURVEY HEADER description → 12px (already working) */
-  #surveyContainer .sd-header .sd-description,
-  #surveyContainer .sv-description {
-    font-family: "Questrial", Arial, sans-serif !important;
-    font-size: 12px !important;
-    font-weight: 400 !important;
-    line-height: 1.5 !important;
-    color: #333 !important;
-  }
+    /* Survey header title (top of form) */
+    #surveyContainer .sd-header h3.sd-title,
+    #surveyContainer .sv-header__title,
+    #surveyContainer h3.sv-title {
+      font-family: "Questrial", Arial, sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 400 !important;
+      line-height: 1.35 !important;
+      letter-spacing: 0.2px;
+      margin: 0 0 6px 0 !important;
+    }
 
-  /* PAGE TITLE (“Consent”, etc.). If you ALSO want this smaller, keep this block.
-     If you want only the header small, delete this block. */
-  #surveyContainer h3.sd-title.sd-page__title,
-  #surveyContainer .sd-page__title,
-  #surveyContainer h3.sv-page__title,
-  #surveyContainer .sv_page_title {
-    font-family: "Questrial", Arial, sans-serif !important;
-    font-size: 14px !important;   /* set the size you want for page titles */
-    font-weight: 400 !important;
-    line-height: 1.35 !important;
-  }
-</style>
+    /* Survey header description */
+    #surveyContainer .sd-header .sd-description,
+    #surveyContainer .sv-description {
+      font-family: "Questrial", Arial, sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 400 !important;
+      line-height: 1.5 !important;
+      color: #333 !important;
+    }
+
+    /* Page title (“Consent”, etc.) — also 14px to match */
+    #surveyContainer h3.sd-title.sd-page__title,
+    #surveyContainer .sd-page__title,
+    #surveyContainer h3.sv-page__title,
+    #surveyContainer .sv_page_title {
+      font-family: "Questrial", Arial, sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 400 !important;
+      line-height: 1.35 !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -63,14 +68,14 @@
   <div id="surveyContainer"></div>
 
   <script>
-    // ---- Show any JS error on the page (helps diagnose blank screen) ----
+    // Show runtime errors on page (helps diagnose blanks)
     window.addEventListener("error", function (e) {
       const box = document.getElementById("errbox");
       box.style.display = "block";
       box.textContent = "Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : "");
     });
 
-    // === Your Survey JSON (use exactly as you posted) ===
+    // === Survey JSON ===
     const surveyJson = {
       "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
       "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -187,9 +192,13 @@
                     "Dydrogesterone",
                     "Injectable progesterone",
                     "Injectable Hydroxy progesterone",
-                    "Other",
-                    "NA"
+                    "Other"
                   ],
+                  "showOtherItem": true,
+                  "otherText": "Other (please specify)",
+                  "otherPlaceholder": "Please specify molecule",
+                  "storeOthersAsComment": true,
+                  "allowClear": true,
                   "placeholder": "Select..."
                 },
                 {
@@ -198,6 +207,8 @@
                   "cellType": "dropdown",
                   "isRequired": true,
                   "visibleIf": "{row.useProg} = 1",
+                  "enableIf": "{row.useProg} = 1 and {row.molecule} <> 'Other'",
+                  "resetValueIf": "{row.molecule} = 'Other'",
                   "choices": [
                     { "value": "10 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
                     { "value": "10 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
@@ -216,7 +227,7 @@
                     { "value": "250 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
                     { "value": "500 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
 
-                    { "value": "NA", "visibleIf": "{row.molecule} = 'Vaginal gel' or {row.molecule} = 'Other' or {row.molecule} = 'NA'" }
+                    { "value": "NA", "visibleIf": "{row.molecule} = 'Vaginal gel'" }
                   ],
                   "placeholder": "Select..."
                 }
@@ -344,7 +355,6 @@
     // === Create the model & wire submit ===
     const survey = new Survey.Model(surveyJson);
 
-    // (Your Apps Script URL; harmless if it’s wrong—rendering still works)
     const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
     survey.onComplete.add(async ({ data }) => {
       try {
@@ -353,7 +363,7 @@
         await fetch(SHEETS_WEB_APP_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, // simple: avoid preflight
           body: JSON.stringify(payload)
         });
         alert("Thanks! Your response has been recorded.");
@@ -363,40 +373,12 @@
       }
     });
 
-    // === Render after DOM is ready ===
+    // === Render once DOM is ready ===
     document.addEventListener("DOMContentLoaded", () => {
-      survey.render(document.getElementById("surveyContainer"));
+      const target = document.getElementById("surveyContainer");
+      if (!target) return;
+      survey.render(target);
     });
-    document.addEventListener("DOMContentLoaded", () => {
-  survey.render(document.getElementById("surveyContainer"));
-
- document.addEventListener("DOMContentLoaded", () => {
-  survey.render(document.getElementById("surveyContainer"));
-
-  // Make sure both header title and page title get your size
-  requestAnimationFrame(() => {
-    // Header title (top bar)
-    const headerTitle = document.querySelector('#surveyContainer .sd-header h3.sd-title, #surveyContainer h3.sv-title');
-    if (headerTitle) {
-      headerTitle.style.fontFamily = '"Questrial", Arial, sans-serif';
-      headerTitle.style.fontSize = '14px';
-      headerTitle.style.fontWeight = '400';
-      headerTitle.style.lineHeight = '1.35';
-    }
-    // Page title (“Consent”, etc.)
-    const pageTitle = document.querySelector('#surveyContainer h3.sd-title.sd-page__title, #surveyContainer .sd-page__title, #surveyContainer .sv_page_title');
-    if (pageTitle) {
-      pageTitle.style.fontFamily = '"Questrial", Arial, sans-serif';
-      pageTitle.style.fontSize = '14px'; // change if you want a different size than header
-      pageTitle.style.fontWeight = '400';
-      pageTitle.style.lineHeight = '1.35';
-    }
-  });
-});
   </script>
 </body>
 </html>
-
-
-
-
