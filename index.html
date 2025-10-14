@@ -24,7 +24,7 @@
     .custom-title {
       font-family: "Questrial", Arial, sans-serif;
       font-size: 14px;             /* EXACT size you want */
-      font-weight: 400;
+      font-weight: 600;
       line-height: 1.35;
       letter-spacing: 0.2px;
       margin: 0 0 6px 0;
@@ -220,6 +220,9 @@
                   "choices": [
                     { "value": "10 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
                     { "value": "10 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                    { "value": "20 mg OD", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                    { "value": "20 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                    { "value": "20 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
 
                     { "value": "200 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
                     { "value": "200 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
@@ -403,3 +406,4 @@
   </script>
 </body>
 </html>
+
