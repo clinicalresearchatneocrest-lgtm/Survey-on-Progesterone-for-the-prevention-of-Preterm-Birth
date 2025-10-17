@@ -131,7 +131,7 @@
             {
               "type": "radiogroup",
               "name": "question6",
-              "title": "2. In your practice, approximately what percentage of pregnancies need treatment for prevention of pre-term delivery?",
+              "title": "2. In your practice, approximately what percentage of pregnancies need treatment for PREVENTION of pre-term delivery?",
               "isRequired": true,
               "choices": [
                 { "value": "Item 1", "text": "<10%" },
@@ -144,7 +144,7 @@
             {
               "type": "checkbox",
               "name": "question7",
-              "title": "3. Common risk factors related to pre-term delivery (please tick top 3)",
+              "title": "3. Common risk factors related to pre-term delivery (select 3 options)",
               "isRequired": true,
               "choices": [
                 { "value": "Item 1", "text": "History of previous pre-term" },
@@ -161,7 +161,7 @@
             {
               "type": "checkbox",
               "name": "question8",
-              "title": "4. Preferred route of progesterone support? (maximum two options can be selected)",
+              "title": "4. Preferred route of progesterone support? (select maximum two options)",
               "isRequired": true,
               "choices": [
                 { "value": "Item 1", "text": "Vaginal" },
@@ -178,7 +178,7 @@
             {
               "type": "matrixdropdown",
               "name": "q5_progesterone",
-              "title": "5. Do you use progesterone for the following factors for Pre-term birth? If yes, select the first choice molecule and dosage.",
+              "title": "5. Do you prescribe progesterone for the following risk-factors for Pre-term birth? When yes, please select the molecule and dosage.",
               "columns": [
                 {
                   "name": "useProg",
@@ -190,7 +190,7 @@
                 },
                 {
                   "name": "molecule",
-                  "title": "First choice molecule",
+                  "title": "Molecule",
                   "cellType": "dropdown",
                   "isRequired": true,
                   "visibleIf": "{row.useProg} = 1",
@@ -260,7 +260,7 @@
             {
               "type": "checkbox",
               "name": "question9",
-              "title": "6. What common side effects do you come across with Injectable (IM/SC) progesterone supplementation? (select maximum 3 options)",
+              "title": "6. What common side effects are seen with INJECTABLE (IM/SC) progesterone supplementation? (select maximum 3 options)",
               "isRequired": true,
               "choices": [
                 { "value": "Item 4", "text": "Pain" },
@@ -278,7 +278,7 @@
             {
               "type": "checkbox",
               "name": "question10",
-              "title": "7. What common side effects do you come across with Natural micronized progesterone vaginal capsule? (select maximum 3 options)",
+              "title": "7. What common side effects are seen with VAGINAL Natural micronized progesterone capsule? (select maximum 3 options)",
               "isRequired": true,
               "choices": [
                 { "value": "Item 1", "text": "Soreness" },
@@ -295,15 +295,15 @@
             {
               "type": "checkbox",
               "name": "question11",
-              "title": "8. What common side effects do you come across with Natural micronized progesterone Oral tablet? (select maximum 3 options)",
+              "title": "8. What common side effects are seen with ORAL Natural micronized progesterone tablet? (select maximum 3 options)",
               "isRequired": true,
               "choices": [
-                { "value": "Item 1", "text": "Vaginal hemorrhage" },
-                { "value": "Item 2", "text": "Migraine / headache" },
-                { "value": "Item 3", "text": "Drowsiness or giddiness" },
-                { "value": "Item 4", "text": "Nausea / Vomiting" },
-                { "value": "Item 5", "text": "Abdominal pain / bloating" },
-                { "value": "Item 6", "text": "Breast pain / tenderness" }
+                { "value": "Item 1", "text": "Nausea / Vomiting" },
+                { "value": "Item 2", "text": "Drowsiness or giddiness" },
+                { "value": "Item 3", "text": "Migraine / headache" },
+                { "value": "Item 4", "text": "Abdominal pain / bloating" },
+                { "value": "Item 5", "text": "Breast pain / tenderness" },
+                { "value": "Item 6", "text": "Vaginal bleeding" }
               ],
               "maxSelectedChoices": 3,
               "minSelectedChoices": 1
@@ -311,7 +311,7 @@
             {
               "type": "checkbox",
               "name": "question13",
-              "title": "9. What are the considerations before prescribing progesterone for prevention of Preterm birth? (select maximum 3 options)",
+              "title": "9. What are the considerations before prescribing progesterone for PREVENTION of Preterm birth? (select maximum 3 options)",
               "isRequired": true,
               "choices": [
                 { "value": "Item 1", "text": "Cost" },
@@ -406,6 +406,7 @@
   </script>
 </body>
 </html>
+
 
 
 
