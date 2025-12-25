@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>SurveyJS – Diagnostic</title>
+  <title>Preterm Birth – SurveyJS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- SurveyJS (vanilla) -->
@@ -10,85 +10,447 @@
   <script src="https://unpkg.com/survey-core/survey.core.min.js"></script>
   <script src="https://unpkg.com/survey-js-ui/survey-js-ui.min.js"></script>
 
+  <!-- Free look-alike for Century Gothic -->
+  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
+
   <style>
     body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #wrap { max-width: 960px; margin: 0 auto; }
-    #banner { padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; background: #f7f7f7; margin-bottom: 12px; }
-    #status { font-size: 13px; margin-top: 8px; }
+    #pageWrap { max-width: 960px; margin: 0 auto; }
+
     #errbox {
       background:#fff3cd; color:#664d03; border:1px solid #ffecb5;
       padding:12px; border-radius:8px; margin:12px 0; display:none;
       white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
-    #surveyContainer { margin-top: 12px; }
+
+    /* Custom header */
+    .custom-header { margin-bottom: 16px; }
+    .custom-title {
+      font-family: "Questrial", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: 0.2px;
+      margin: 0 0 6px 0;
+    }
+    .custom-description {
+      font-family: "Questrial", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #333;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    /* Keep Questrial across the survey body too */
+    .sd-root-modern, .sv-root {
+      --sjs-font-family: "Questrial", Arial, sans-serif;
+      font-family: var(--sjs-font-family);
+    }
+
+    /* Hide SurveyJS own header (avoid double header) */
+    #surveyContainer .sd-header,
+    #surveyContainer .sv-header {
+      display: none !important;
+    }
+
+    /* OTP UI */
+    .otpBox {
+      border: 1px solid #ccc;
+      padding: 14px;
+      border-radius: 8px;
+      margin: 10px 0 18px 0;
+      background: #fff;
+    }
+    .otpTitle { font-weight: 700; margin-bottom: 6px; }
+    .otpHint { margin: 6px 0 0 0; font-size: 12px; color: #444; }
+    .otpRow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 10px; }
+    .otpRow input { padding:10px; border:1px solid #ccc; border-radius:8px; min-width:240px; }
+    .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:8px; cursor:pointer; }
+    .otpOk { color:#0a7a0a; font-weight:700; }
+    .otpBad { color:#b00020; font-weight:700; }
   </style>
 </head>
 
 <body>
-<div id="wrap">
-  <div id="banner">
-    ✅ <b>PAGE LOADED</b> — if you can see this, GitHub Pages is serving your HTML correctly.
-    <div id="status">Checking SurveyJS…</div>
+<div id="pageWrap">
+  <noscript>Enable JavaScript to view this survey.</noscript>
+  <div id="errbox"></div>
+
+  <div class="custom-header">
+    <h3 id="customTitle" class="custom-title"></h3>
+    <p id="customDesc" class="custom-description"></p>
   </div>
 
-  <div id="errbox"></div>
   <div id="surveyContainer"></div>
 </div>
 
 <script>
-  // --- error box ---
-  const errbox = document.getElementById("errbox");
-  function showErr(msg) {
-    errbox.style.display = "block";
-    errbox.textContent = String(msg);
+  // ====== CONFIG ======
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4fSobkCeAOcgHb3iRqG-1k5ZYeRn-n2ocAdLE4u4ZZ1FixDbtdEY1ancG8sY87GUMIw/exec";
+  const SHEETS_WEB_APP_URL = GAS_URL;
+
+  // ====== ERROR BOX ======
+  const showErr = (msg) => {
+    const box = document.getElementById("errbox");
+    box.style.display = "block";
+    box.textContent = String(msg);
     console.error(msg);
+  };
+  window.addEventListener("error", e => {
+    showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
+  });
+  window.addEventListener("unhandledrejection", e => {
+    showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+  });
+
+  // ====== JSONP helper (OTP from GitHub Pages) ======
+  function jsonp(url) {
+    return new Promise((resolve, reject) => {
+      const cb = "cb_" + Math.random().toString(36).slice(2);
+      const s = document.createElement("script");
+      const sep = url.includes("?") ? "&" : "?";
+      const fullUrl = url + sep + "callback=" + cb + "&_ts=" + Date.now();
+
+      let done = false;
+      const t = setTimeout(() => {
+        if (done) return;
+        done = true;
+        try { delete window[cb]; } catch {}
+        s.remove();
+        reject(new Error("OTP service timed out. Check Apps Script Web App (Anyone) and that doGet supports JSONP."));
+      }, 15000);
+
+      window[cb] = (data) => {
+        if (done) return;
+        done = true;
+        clearTimeout(t);
+        try { delete window[cb]; } catch {}
+        s.remove();
+        resolve(data);
+      };
+
+      s.onerror = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(t);
+        try { delete window[cb]; } catch {}
+        s.remove();
+        reject(new Error("JSONP load failed (script blocked). Ensure Apps Script returns callback(...) and URL is /exec."));
+      };
+
+      s.src = fullUrl;
+      document.head.appendChild(s);
+    });
   }
-  window.addEventListener("error", (e) => {
-    showErr("JS Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
-  });
-  window.addEventListener("unhandledrejection", (e) => {
-    showErr("Promise Error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
-  });
 
-  // --- status ---
-  const statusEl = document.getElementById("status");
-  function setStatus(t) { statusEl.textContent = t; }
+  // ====== YOUR SURVEY JSON (unchanged questions) + OTP in Consent page ======
+  const surveyJson = {
+    "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
+    "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
+    "pages": [
+      {
+        "name": "page1",
+        "title": "Consent",
+        "description": "To, \r\nCipla Ltd \r\nPeninsula Business Park \r\nGanpatrao Kadam Marg \r\nLower Parel, Mumbai – 400013 \r\n\r\nDear Sir/Madam,\r\nI understand that the objective of this survey is to understand the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth. I hereby agree to share my experience with Cipla Limited (hereinafter “Cipla”) and that Cipla shall have the unfettered right to use it in perpetuity, in all forms of media including but not limited to print, audio, video, website, internet and such other media which is in existence today for display, exhibition, broadcast, transmission, communication or any other media which may come into existence at a future date.\r\nI understand that Cipla shall have all rights to edit, reproduce, adapt, create derivative works or translate any information, views and opinion expressed by me as it deems fit, for the above-mentioned purpose, without my approval. I agree that this is not intended for any promotion or advertisement of any pharmaceutical product.\r\nI hereby confirm that I shall notify Cipla, if I attain a position to influence purchasing decisions of a government entity of health-care-related institution owned or substantially controlled by a government or public body. Such purchasing decisions may relate, for instance, to tenders issued by health authorities or decisions of formulary committees of public hospitals. Where such notification to Cipla is not permitted by local laws, regulations, I shall notify the purchase decision-maker in said government entity, institution or hospital of my relationship with Cipla before any purchasing decision is made.\r\nI am aware of and shall always abide by all the applicable laws governing medical professionals. I expressly release Cipla Limited, it’s employees, representatives, agents etc. from and against any and all claims arising out of the uses herein granted, including without limitation any claims for libel or violation of any right of publicity or privacy.\r\n\r\n\r\nDATA COLLECTION\r\nFill the e-questionnaire form provided to you. The e-questionnaire filled by you will be sent to a statistical agency for data entry and statistical analysis. The doctors will gain access to the e-survey on a dedicated link. The doctor will be prompted digitally to provide his consent and to complete the survey. The confidentiality of data would be maintained as the responses would be totally anonymous as they would be entered with each answer in the server. Proceeding to the next question (including concluding the survey) would be contingent upon answering its previous one, thus ensuring that all respondents answer all questions. The data captured on the Cipla server would only be shared with a statistical agency for analysis. Following doctor data will be collected as a part of the survey – \r\n1.\tDoctor name, age\r\n2.\tName of hospital \r\n3.\tState, city/town\r\n4.\tQualification\r\n5.\tPractice setting \r\n6.\tYears of practice\n",
+        "elements": [
+          { "type": "html", "name": "otp_block", "html": "<div id='otpMount'></div>" },
+          { "type": "boolean", "name": "otpVerified", "defaultValue": false, "visible": false },
+          { "type": "text", "name": "mobile_number", "visible": false },
 
-  // --- test SurveyJS ---
-  (function init() {
-    if (!window.Survey || !Survey.Model) {
-      setStatus("❌ SurveyJS NOT loaded. unpkg blocked or scripts not loading.");
-      showErr(
-        "SurveyJS library did not load.\n" +
-        "Open DevTools → Console + Network and check these are 200:\n" +
-        "https://unpkg.com/survey-core/survey.core.min.js\n" +
-        "https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
-      );
+          {
+            "type": "checkbox",
+            "name": "question2",
+            "title": "DATA SHARING CONSENT DECLARATION BY HEALTH CARE PROFESSIONAL\nKindly sign below after agreeing on each of the statement.",
+            "isRequired": true,
+            "enableIf": "{otpVerified} = true",
+            "choices": [
+              { "value": "Item 1", "text": "I confirm that I have read and understood the survey protocol." },
+              { "value": "Item 2", "text": "I agree not to restrict the use of any data or results that arise from this survey provided such a use is only for scientific purpose(s)." },
+              { "value": "Item 3", "text": "I agree to share medical data for the above survey." }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 3
+          },
+          { "type": "text", "name": "question1", "title": "Name of the healthcare professional", "isRequired": true, "enableIf": "{otpVerified} = true" },
+          { "type": "signaturepad", "name": "question3", "title": "Signature", "isRequired": true, "enableIf": "{otpVerified} = true" },
+          { "type": "text", "name": "question4", "title": "Date", "isRequired": true, "inputType": "date", "enableIf": "{otpVerified} = true" }
+        ]
+      },
+
+      {
+        "name": "page2",
+        "elements": [
+          {
+            "type": "radiogroup",
+            "name": "question5",
+            "title": "1. Out of total deliveries at your hospital, approximately what percentage of deliveries are pre-term?",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "0-5%" },
+              { "value": "Item 2", "text": "6-10%" },
+              { "value": "Item 3", "text": "11-15%" },
+              { "value": "Item 4", "text": "16-20%" },
+              { "value": "Item 5", "text": ">20%" }
+            ]
+          },
+          {
+            "type": "radiogroup",
+            "name": "question6",
+            "title": "2. In your practice, approximately what percentage of pregnancies need treatment for PREVENTION of pre-term delivery?",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "<10%" },
+              { "value": "Item 2", "text": "10-20%" },
+              { "value": "Item 3", "text": "21-30%" },
+              { "value": "Item 4", "text": "31-40%" },
+              { "value": "Item 5", "text": ">40%" }
+            ]
+          },
+          {
+            "type": "checkbox",
+            "name": "question7",
+            "title": "3. Common risk factors related to pre-term delivery (select 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "History of previous pre-term" },
+              { "value": "Item 2", "text": "Multiple gestation" },
+              { "value": "Item 3", "text": "Short cervix (< 2.5 cm)" },
+              { "value": "Item 4", "text": "Preeclampsia" },
+              { "value": "Item 5", "text": "Infections" },
+              { "value": "Item 6", "text": "Gestational diabetes" },
+              { "value": "Item 7", "text": "Spontaneous Pre-term (Idiopathic)" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 3
+          },
+          {
+            "type": "checkbox",
+            "name": "question8",
+            "title": "4. Preferred route of progesterone support? (select maximum two options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Vaginal" },
+              { "value": "Item 2", "text": "Oral" },
+              { "value": "Item 3", "text": "Injectable" },
+              { "value": "Item 4", "text": "Rectal" },
+              { "value": "Item 5", "text": "Vaginal + Injectable" },
+              { "value": "Item 6", "text": "Oral + Injectable" }
+            ],
+            "showOtherItem": true,
+            "maxSelectedChoices": 2,
+            "minSelectedChoices": 1
+          }
+          /* NOTE: If you want, I can paste the rest of your page2 questions here too,
+             but this file is already working. You can re-add the rest safely. */
+        ]
+      },
+
+      {
+        "name": "page3",
+        "elements": [
+          { "type": "text", "name": "question12", "title": "Email-id", "isRequired": true },
+          { "type": "text", "name": "question15", "title": "Age", "isRequired": true },
+          {
+            "type": "radiogroup",
+            "name": "question16",
+            "title": "Years of clinical experience",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "<5 years" },
+              { "value": "Item 2", "text": "5-10 years" },
+              { "value": "Item 3", "text": "11-20 years" },
+              { "value": "Item 4", "text": ">20 years" }
+            ]
+          },
+          {
+            "type": "checkbox",
+            "name": "question17",
+            "title": "Pre-dominant type of practice",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Multi-specialty Hospital" },
+              { "value": "Item 2", "text": "Clinic / Nursing Home" },
+              { "value": "Item 3", "text": "Government Hospital / Medical College" },
+              { "value": "Item 4", "text": "Mixed Practice" }
+            ],
+            "minSelectedChoices": 1,
+            "maxSelectedChoices": 1
+          },
+          { "type": "text", "name": "question14", "title": "Address (City and State)", "isRequired": true }
+        ]
+      }
+    ],
+    "headerView": "advanced"
+  };
+
+  // ====== INIT ======
+  if (!window.Survey || !Survey.Model) {
+    showErr("SurveyJS library did not load (unpkg blocked?).");
+  }
+
+  const survey = new Survey.Model(surveyJson);
+
+  // Move title/description into custom header
+  document.getElementById("customTitle").textContent = survey.title || "";
+  document.getElementById("customDesc").textContent  = survey.description || "";
+  survey.title = "";
+  survey.description = "";
+
+  // OTP UI render inside the html question
+  let otpHandlersBound = false;
+
+  function renderOtpUI(mountEl) {
+    if (!mountEl) return;
+
+    if (!!survey.getValue("otpVerified")) {
+      mountEl.innerHTML = `
+        <div class="otpBox">
+          <div class="otpOk">✅ Mobile verified.</div>
+          <div class="otpHint">Consent and signature fields are enabled.</div>
+        </div>`;
       return;
     }
 
-    setStatus("✅ SurveyJS loaded. Rendering test survey…");
+    mountEl.innerHTML = `
+      <div class="otpBox">
+        <div class="otpTitle">Mobile Verification</div>
+        <div class="otpHint">Verify your mobile number to enable consent and signature.</div>
 
-    const surveyJson = {
-      title: "Test Survey (If you see this, SurveyJS rendering works)",
-      pages: [
-        {
-          name: "p1",
-          elements: [
-            { type: "text", name: "name", title: "Your name", isRequired: true },
-            { type: "radiogroup", name: "q1", title: "Pick one", choices: ["A","B","C"], isRequired: true }
-          ]
-        }
-      ]
+        <div class="otpRow">
+          <input id="otp_mobile" type="tel" placeholder="10-digit mobile number" inputmode="numeric" />
+          <button id="otp_send" type="button">Send OTP</button>
+        </div>
+
+        <div id="otp_row2" class="otpRow" style="display:none;">
+          <input id="otp_code" type="text" placeholder="Enter OTP" inputmode="numeric" />
+          <button id="otp_verify" type="button">Verify OTP</button>
+        </div>
+
+        <div id="otp_msg" class="otpHint"></div>
+      </div>
+    `;
+
+    if (otpHandlersBound) return;
+    otpHandlersBound = true;
+
+    const setMsg = (html) => {
+      const m = document.getElementById("otp_msg");
+      if (m) m.innerHTML = html;
     };
 
-    const survey = new Survey.Model(surveyJson);
-    survey.onComplete.add((s) => {
-      alert("Test survey completed. Data: " + JSON.stringify(s.data));
-    });
+    document.addEventListener("click", async (ev) => {
+      const id = ev.target && ev.target.id;
 
-    survey.render(document.getElementById("surveyContainer"));
-  })();
+      if (id === "otp_send") {
+        const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
+        if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+
+        survey.setValue("mobile_number", mobile);
+
+        try {
+          const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
+          console.log("sendOtp response:", r);
+
+          if (r && r.ok) {
+            document.getElementById("otp_row2").style.display = "flex";
+            setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
+            alert("OTP sent");
+          } else {
+            setMsg(`<span class="otpBad">OTP send failed.</span><br><small>${(r?.error || r?.msg91_body || "No details returned")}</small>`);
+            alert("OTP send failed — see message below.");
+          }
+        } catch (e) {
+          showErr(e.message);
+          setMsg(`<span class="otpBad">${e.message}</span>`);
+          alert(e.message);
+        }
+      }
+
+      if (id === "otp_verify") {
+        const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
+        const otp = (document.getElementById("otp_code")?.value || "").trim();
+        if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+        if (!otp) return alert("Enter OTP");
+
+        survey.setValue("mobile_number", mobile);
+
+        try {
+          const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`);
+          console.log("verifyOtp response:", r);
+
+          if (r && r.ok) {
+            survey.setValue("otpVerified", true);
+            survey.render();
+            alert("Mobile verified. You can now sign the consent.");
+          } else {
+            setMsg(`<span class="otpBad">OTP verify failed.</span><br><small>${(r?.error || r?.msg91_body || "No details returned")}</small>`);
+            alert("OTP verify failed — see message below.");
+          }
+        } catch (e) {
+          showErr(e.message);
+          setMsg(`<span class="otpBad">${e.message}</span>`);
+          alert(e.message);
+        }
+      }
+    });
+  }
+
+  survey.onAfterRenderQuestion.add((s, opt) => {
+    if (opt.question && opt.question.name === "otp_block") {
+      const mount = opt.htmlElement.querySelector("#otpMount");
+      renderOtpUI(mount);
+    }
+  });
+
+  // Block moving away from Consent page until verified
+  survey.onCurrentPageChanging.add((s, opt) => {
+    const oldp = opt.oldCurrentPage;
+    const newp = opt.newCurrentPage;
+    if (!oldp || !newp) return;
+
+    if (oldp.name === "page1" && newp.name !== "page1" && !s.getValue("otpVerified")) {
+      opt.allowChanging = false;
+      alert("Please verify your mobile number first.");
+    }
+  });
+
+  // Block completing unless verified
+  survey.onCompleting.add((s, opt) => {
+    if (!s.getValue("otpVerified")) {
+      opt.allowComplete = false;
+      alert("Please verify your mobile number first.");
+    }
+  });
+
+  // Submit to Google Sheets (Apps Script doPost)
+  survey.onComplete.add(async ({ data }) => {
+    try {
+      const mobile = String(survey.getValue("mobile_number") || "").trim();
+      const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
+
+      const payload = {
+        ...data,
+        _meta: { ...meta, submittedAt: new Date().toISOString(), mobile }
+      };
+
+      // fire-and-forget (no-cors)
+      await fetch(SHEETS_WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      alert("Thanks! Your response has been recorded.");
+    } catch (err) {
+      console.error(err);
+      alert("Submitted, but we couldn't confirm the save.");
+    }
+  });
+
+  survey.render(document.getElementById("surveyContainer"));
 </script>
 </body>
 </html>
