@@ -13,6 +13,132 @@
   <!-- Free look-alike for Century Gothic -->
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
 
+  <style>
+    body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #pageWrap { max-width: 960px; margin: 0 auto; }
+
+    .custom-header { margin-bottom: 16px; }
+    .custom-title {
+      font-family: "Questrial", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .custom-description {
+      font-family: "Questrial", Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    /* OTP box */
+    #otpBox {
+      border: 1px solid #ccc;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    #surveyContainer { display: none; }
+
+    .sd-root-modern, .sv-root {
+      --sjs-font-family: "Questrial", Arial, sans-serif;
+    }
+
+    #surveyContainer .sd-header,
+    #surveyContainer .sv-header {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+<div id="pageWrap">
+
+  <!-- OTP SECTION -->
+  <div id="otpBox">
+    <h3>Mobile Verification</h3>
+    <p>Please verify your mobile number before proceeding to the survey.</p>
+
+    <input id="mobile" type="tel" placeholder="10-digit mobile number" />
+    <br><br>
+    <button onclick="sendOTP()">Send OTP</button>
+
+    <div id="otpVerify" style="display:none; margin-top:12px;">
+      <input id="otp" type="text" placeholder="Enter OTP" />
+      <br><br>
+      <button onclick="verifyOTP()">Verify OTP</button>
+    </div>
+  </div>
+
+  <!-- YOUR HEADER -->
+  <div class="custom-header">
+    <h3 id="customTitle" class="custom-title"></h3>
+    <p id="customDesc" class="custom-description"></p>
+  </div>
+
+  <!-- SURVEY -->
+  <div id="surveyContainer"></div>
+
+</div>
+
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
+
+  function sendOTP() {
+    const mobile = document.getElementById("mobile").value;
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      alert("Enter valid mobile number");
+      return;
+    }
+    fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sendOtp", mobile })
+    }).then(() => {
+      document.getElementById("otpVerify").style.display = "block";
+      alert("OTP sent");
+    });
+  }
+
+  function verifyOTP() {
+    const mobile = document.getElementById("mobile").value;
+    const otp = document.getElementById("otp").value;
+
+    fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "verifyOtp", mobile, otp })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok) {
+        document.getElementById("otpBox").style.display = "none";
+        document.getElementById("surveyContainer").style.display = "block";
+        initSurvey();   // survey loads ONLY now
+      } else {
+        alert("Invalid OTP");
+      }
+    });
+  }
+
+  function initSurvey() {
+    /* ===== YOUR SURVEY JSON – UNCHANGED ===== */
+    <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Preterm Birth – SurveyJS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- SurveyJS (vanilla) -->
+  <link href="https://unpkg.com/survey-core/survey-core.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/survey-core/survey.core.min.js"></script>
+  <script src="https://unpkg.com/survey-js-ui/survey-js-ui.min.js"></script>
+
+  <!-- Free look-alike for Century Gothic -->
+  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
+
   <!-- Basic layout -->
   <style>
     body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
@@ -406,7 +532,3 @@
   </script>
 </body>
 </html>
-
-
-
-
