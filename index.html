@@ -17,18 +17,10 @@
     body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #pageWrap { max-width: 960px; margin: 0 auto; }
 
-    .custom-header { margin-bottom: 16px; }
-    .custom-title {
-      font-family: "Questrial", Arial, sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .custom-description {
-      font-family: "Questrial", Arial, sans-serif;
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: pre-wrap;
+    #errbox {
+      background:#fff3cd; color:#664d03; border:1px solid #ffecb5;
+      padding:12px; border-radius:8px; margin:12px 0; display:none;
+      white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
     /* OTP box */
@@ -39,113 +31,10 @@
       margin-bottom: 20px;
     }
 
-    #surveyContainer { display: none; }
+    /* Survey hidden until OTP verified */
+    #surveyBlock { display: none; }
 
-    .sd-root-modern, .sv-root {
-      --sjs-font-family: "Questrial", Arial, sans-serif;
-    }
-
-    #surveyContainer .sd-header,
-    #surveyContainer .sv-header {
-      display: none !important;
-    }
-  </style>
-</head>
-
-<body>
-<div id="pageWrap">
-
-  <!-- OTP SECTION -->
-  <div id="otpBox">
-    <h3>Mobile Verification</h3>
-    <p>Please verify your mobile number before proceeding to the survey.</p>
-
-    <input id="mobile" type="tel" placeholder="10-digit mobile number" />
-    <br><br>
-    <button onclick="sendOTP()">Send OTP</button>
-
-    <div id="otpVerify" style="display:none; margin-top:12px;">
-      <input id="otp" type="text" placeholder="Enter OTP" />
-      <br><br>
-      <button onclick="verifyOTP()">Verify OTP</button>
-    </div>
-  </div>
-
-  <!-- YOUR HEADER -->
-  <div class="custom-header">
-    <h3 id="customTitle" class="custom-title"></h3>
-    <p id="customDesc" class="custom-description"></p>
-  </div>
-
-  <!-- SURVEY -->
-  <div id="surveyContainer"></div>
-
-</div>
-
-<script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
-
-  function sendOTP() {
-    const mobile = document.getElementById("mobile").value;
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      alert("Enter valid mobile number");
-      return;
-    }
-    fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "sendOtp", mobile })
-    }).then(() => {
-      document.getElementById("otpVerify").style.display = "block";
-      alert("OTP sent");
-    });
-  }
-
-  function verifyOTP() {
-    const mobile = document.getElementById("mobile").value;
-    const otp = document.getElementById("otp").value;
-
-    fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "verifyOtp", mobile, otp })
-    })
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok) {
-        document.getElementById("otpBox").style.display = "none";
-        document.getElementById("surveyContainer").style.display = "block";
-        initSurvey();   // survey loads ONLY now
-      } else {
-        alert("Invalid OTP");
-      }
-    });
-  }
-
-  function initSurvey() {
-    /* ===== YOUR SURVEY JSON – UNCHANGED ===== */
-    <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Preterm Birth – SurveyJS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- SurveyJS (vanilla) -->
-  <link href="https://unpkg.com/survey-core/survey-core.min.css" rel="stylesheet" />
-  <script src="https://unpkg.com/survey-core/survey.core.min.js"></script>
-  <script src="https://unpkg.com/survey-js-ui/survey-js-ui.min.js"></script>
-
-  <!-- Free look-alike for Century Gothic -->
-  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
-
-  <!-- Basic layout -->
-  <style>
-    body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #pageWrap { max-width: 960px; margin: 0 auto; }
-    #errbox { background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:12px; border-radius:8px; margin:12px 0; display:none; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-    /* Your own header (guaranteed sizes) */
+    /* Your custom header (guaranteed sizes) */
     .custom-header { margin-bottom: 16px; }
     .custom-title {
       font-family: "Questrial", Arial, sans-serif;
@@ -161,7 +50,7 @@
       font-weight: 400;
       line-height: 1.5;
       color: #333;
-      white-space: pre-wrap;       /* keep your line breaks from JSON */
+      white-space: pre-wrap;       /* keep line breaks from JSON */
       margin: 0;
     }
 
@@ -171,46 +60,142 @@
       font-family: var(--sjs-font-family);
     }
 
-    /* Hide ONLY SurveyJS's own header text (so you don't see double header).
-       We DON’T remove any questions/pages. */
-    #surveyContainer .sd-header .sd-title,
-    #surveyContainer .sd-header .sd-description,
-    #surveyContainer .sv-header__title,
-    #surveyContainer .sv-description { display: none !important; }
+    /* Hide SurveyJS own header (avoid double header) */
+    #surveyContainer .sd-header,
+    #surveyContainer .sv-header {
+      display: none !important;
+    }
   </style>
 </head>
 
 <body>
-  <div id="pageWrap">
-    <noscript>Enable JavaScript to view this survey.</noscript>
-    <div id="errbox"></div>
+<div id="pageWrap">
+  <noscript>Enable JavaScript to view this survey.</noscript>
+  <div id="errbox"></div>
 
-    <!-- Your controlled header -->
+  <!-- OTP SECTION -->
+  <div id="otpBox">
+    <h3>Mobile Verification</h3>
+    <p>Please verify your mobile number before proceeding to the survey.</p>
+
+    <input id="mobile" type="tel" placeholder="10-digit mobile number" />
+    <br><br>
+    <button id="sendOtpBtn" type="button">Send OTP</button>
+
+    <div id="otpVerify" style="display:none; margin-top:12px;">
+      <input id="otp" type="text" placeholder="Enter OTP" />
+      <br><br>
+      <button id="verifyOtpBtn" type="button">Verify OTP</button>
+    </div>
+  </div>
+
+  <!-- SURVEY BLOCK (hidden until OTP verified) -->
+  <div id="surveyBlock">
     <div class="custom-header">
       <h3 id="customTitle" class="custom-title"></h3>
       <p id="customDesc" class="custom-description"></p>
     </div>
-
-    <!-- Survey mounts here -->
     <div id="surveyContainer"></div>
   </div>
+</div>
 
-  <script>
-    // Show runtime errors on page (if anything breaks)
-    const showErr = (msg) => {
-      const box = document.getElementById("errbox");
-      box.style.display = "block";
-      box.textContent = msg;
-      console.error(msg);
-    };
-    window.addEventListener("error", e => {
-      showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
-    });
-    window.addEventListener("unhandledrejection", e => {
-      showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
-    });
+<script>
+  // ====== CONFIG ======
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
+  const SHEETS_WEB_APP_URL = GAS_URL; // same endpoint in your current setup
 
-    // === YOUR SURVEY JSON (unchanged questions; molecule/dose logic as you posted) ===
+  // ====== ERROR BOX ======
+  const showErr = (msg) => {
+    const box = document.getElementById("errbox");
+    box.style.display = "block";
+    box.textContent = msg;
+    console.error(msg);
+  };
+  window.addEventListener("error", e => {
+    showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
+  });
+  window.addEventListener("unhandledrejection", e => {
+    showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+  });
+
+  // ====== OTP FUNCTIONS ======
+  async function sendOTP() {
+    const mobile = document.getElementById("mobile").value.trim();
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      alert("Enter valid mobile number");
+      return;
+    }
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "sendOtp", mobile })
+      });
+
+      // Some GAS deployments return no JSON for sendOtp; that's OK.
+      document.getElementById("otpVerify").style.display = "block";
+      alert("OTP sent");
+    } catch (e) {
+      showErr("sendOTP failed:\n" + (e && e.stack ? e.stack : e));
+      alert("Failed to send OTP. Please try again.");
+    }
+  }
+
+  async function verifyOTP() {
+    const mobile = document.getElementById("mobile").value.trim();
+    const otp = document.getElementById("otp").value.trim();
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      alert("Enter valid mobile number");
+      return;
+    }
+    if (!otp) {
+      alert("Enter OTP");
+      return;
+    }
+
+    try {
+      const r = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verifyOtp", mobile, otp })
+      });
+
+      const res = await r.json().catch(() => null);
+      if (res && res.ok) {
+        document.getElementById("otpBox").style.display = "none";
+        document.getElementById("surveyBlock").style.display = "block";
+        initSurveyOnce();
+      } else {
+        alert("Invalid OTP");
+      }
+    } catch (e) {
+      showErr("verifyOTP failed:\n" + (e && e.stack ? e.stack : e));
+      alert("OTP verification failed. Please try again.");
+    }
+  }
+
+  document.getElementById("sendOtpBtn").addEventListener("click", sendOTP);
+  document.getElementById("verifyOtpBtn").addEventListener("click", verifyOTP);
+
+  // ====== SURVEY INIT (ONLY ONCE) ======
+  let _surveyInitialized = false;
+  function initSurveyOnce() {
+    if (_surveyInitialized) return;
+    _surveyInitialized = true;
+
+    if (!window.Survey || !Survey.Model) {
+      showErr(
+        "SurveyJS library did not load.\n" +
+        "Check Network tab for these files returning 200:\n" +
+        "- https://unpkg.com/survey-core/survey.core.min.js\n" +
+        "- https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
+      );
+      return;
+    }
+
+    // === YOUR SURVEY JSON (UNCHANGED) ===
     const surveyJson = {
       "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
       "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -489,46 +474,40 @@
       "headerView": "advanced"
     };
 
-    // Create model
-    document.addEventListener("DOMContentLoaded", () => {
-      if (!window.Survey || !Survey.Model) {
-        showErr("SurveyJS library did not load. Check that these return 200 in Network tab:\n- survey-core.min.js\n- survey-js-ui.min.js");
-        return;
+    const survey = new Survey.Model(surveyJson);
+
+    // Move title/description into custom header
+    const customTitle = survey.title || "";
+    const customDesc  = survey.description || "";
+    survey.title = "";
+    survey.description = "";
+    document.getElementById("customTitle").textContent = customTitle;
+    document.getElementById("customDesc").textContent  = customDesc;
+
+    // Submit to Google Sheets
+    survey.onComplete.add(async ({ data }) => {
+      try {
+        const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
+        const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
+
+        // NOTE: no-cors means you can't read response; fine for "fire-and-forget"
+        await fetch(SHEETS_WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        alert("Thanks! Your response has been recorded.");
+      } catch (err) {
+        console.error(err);
+        alert("Submitted, but we couldn't confirm the save.");
       }
-
-      const survey = new Survey.Model(surveyJson);
-
-      // Move Survey title/description into our custom header (don’t show them inside SurveyJS header)
-      const customTitle = survey.title || "";
-      const customDesc  = survey.description || "";
-      survey.title = "";         // hide inside SurveyJS
-      survey.description = "";   // hide inside SurveyJS
-      document.getElementById("customTitle").textContent = customTitle;
-      document.getElementById("customDesc").textContent  = customDesc;
-
-      // Submit to Google Sheets (unchanged)
-      const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywmEzWa9bbjFCt1xEzPUQvfxzjoGG8VtEygYikkEmla6_hm8Qs6JF1_T6VfziCJG1MQg/exec";
-      survey.onComplete.add(async ({ data }) => {
-        try {
-          const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
-          const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
-          await fetch(SHEETS_WEB_APP_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-          });
-          alert("Thanks! Your response has been recorded.");
-        } catch (err) {
-          console.error(err);
-          alert("Submitted, but we couldn't confirm the save.");
-        }
-      });
-
-      // Render
-      const target = document.getElementById("surveyContainer");
-      survey.render(target);
     });
-  </script>
+
+    // Render survey
+    survey.render(document.getElementById("surveyContainer"));
+  }
+</script>
 </body>
 </html>
