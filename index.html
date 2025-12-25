@@ -23,7 +23,6 @@
       white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
-    /* Custom header */
     .custom-header { margin-bottom: 16px; }
     .custom-title {
       font-family: "Questrial", Arial, sans-serif;
@@ -43,13 +42,11 @@
       margin: 0;
     }
 
-    /* Keep Questrial across the survey body too */
     .sd-root-modern, .sv-root {
       --sjs-font-family: "Questrial", Arial, sans-serif;
       font-family: var(--sjs-font-family);
     }
 
-    /* Hide SurveyJS own header (avoid double header) */
     #surveyContainer .sd-header,
     #surveyContainer .sv-header {
       display: none !important;
@@ -78,11 +75,11 @@
   <noscript>Enable JavaScript to view this survey.</noscript>
   <div id="errbox"></div>
 
-  <!-- SURVEY -->
   <div class="custom-header">
     <h3 id="customTitle" class="custom-title"></h3>
     <p id="customDesc" class="custom-description"></p>
   </div>
+
   <div id="surveyContainer"></div>
 </div>
 
@@ -105,7 +102,7 @@
     showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
   });
 
-  // ====== JSONP (for OTP; works on GitHub Pages) ======
+  // ====== JSONP helper (OTP) ======
   function jsonp(url) {
     return new Promise((resolve, reject) => {
       const cb = "cb_" + Math.random().toString(36).slice(2);
@@ -119,9 +116,7 @@
         done = true;
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error(
-          "OTP service not reachable. Ensure Apps Script Web App access is set to 'Anyone' and you are using the /exec URL."
-        ));
+        reject(new Error("OTP service timed out. Check Apps Script deployment (Anyone) and /exec URL."));
       }, 12000);
 
       window[cb] = (data) => {
@@ -139,9 +134,7 @@
         clearTimeout(t);
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error(
-          "OTP service blocked. Ensure Apps Script Web App access is set to 'Anyone' and you are using the /exec URL."
-        ));
+        reject(new Error("JSONP load failed. Apps Script did not return callback()."));
       };
 
       s.src = fullUrl;
@@ -149,7 +142,7 @@
     });
   }
 
-  // ====== SURVEY JSON (YOUR QUESTIONS) + OTP embedded in Consent page ======
+  // ====== SURVEY JSON ======
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -229,6 +222,7 @@
             "maxSelectedChoices": 3,
             "minSelectedChoices": 3
           },
+
           {
             "type": "checkbox",
             "name": "question8",
@@ -246,6 +240,7 @@
             "maxSelectedChoices": 2,
             "minSelectedChoices": 1
           },
+
           {
             "type": "matrixdropdown",
             "name": "q5_progesterone",
@@ -327,72 +322,6 @@
               { "value": "r10", "text": "Gestational diabetes" },
               { "value": "r11", "text": "Anatomical variation / deformities" }
             ]
-          },
-          {
-            "type": "checkbox",
-            "name": "question9",
-            "title": "6. What common side effects are seen with INJECTABLE (IM/SC) progesterone supplementation? (select maximum 3 options)",
-            "isRequired": true,
-            "choices": [
-              { "value": "Item 4", "text": "Pain" },
-              { "value": "Item 5", "text": "Swelling / Inflammation" },
-              { "value": "Item 6", "text": "Itching" },
-              { "value": "Item 7", "text": "Skin rashes" },
-              { "value": "Item 8", "text": "Nausea / Vomiting" },
-              { "value": "Item 9", "text": "Breast pain / tenderness" },
-              { "value": "Item 10", "text": "Drowsiness or giddiness" },
-              { "value": "Item 11", "text": "Migraine / headache" }
-            ],
-            "maxSelectedChoices": 3,
-            "minSelectedChoices": 1
-          },
-          {
-            "type": "checkbox",
-            "name": "question10",
-            "title": "7. What common side effects are seen with VAGINAL Natural micronized progesterone capsule? (select maximum 3 options)",
-            "isRequired": true,
-            "choices": [
-              { "value": "Item 1", "text": "Soreness" },
-              { "value": "Item 2", "text": "Diarrhoea" },
-              { "value": "Item 3", "text": "Flatulence" },
-              { "value": "Item 4", "text": "Vaginal irritation" },
-              { "value": "Item 5", "text": "Dryness" },
-              { "value": "Item 6", "text": "Spotting" },
-              { "value": "Item 7", "text": "Skin rashes" }
-            ],
-            "maxSelectedChoices": 3,
-            "minSelectedChoices": 1
-          },
-          {
-            "type": "checkbox",
-            "name": "question11",
-            "title": "8. What common side effects are seen with ORAL Natural micronized progesterone tablet? (select maximum 3 options)",
-            "isRequired": true,
-            "choices": [
-              { "value": "Item 1", "text": "Nausea / Vomiting" },
-              { "value": "Item 2", "text": "Drowsiness or giddiness" },
-              { "value": "Item 3", "text": "Migraine / headache" },
-              { "value": "Item 4", "text": "Abdominal pain / bloating" },
-              { "value": "Item 5", "text": "Breast pain / tenderness" },
-              { "value": "Item 6", "text": "Vaginal bleeding" }
-            ],
-            "maxSelectedChoices": 3,
-            "minSelectedChoices": 1
-          },
-          {
-            "type": "checkbox",
-            "name": "question13",
-            "title": "9. What are the considerations before prescribing progesterone for PREVENTION of Preterm birth? (select maximum 3 options)",
-            "isRequired": true,
-            "choices": [
-              { "value": "Item 1", "text": "Cost" },
-              { "value": "Item 2", "text": "Efficacy" },
-              { "value": "Item 3", "text": "Safety" },
-              { "value": "Item 4", "text": "Route of administration" },
-              { "value": "Item 5", "text": "Patient compliance" }
-            ],
-            "maxSelectedChoices": 3,
-            "minSelectedChoices": 1
           }
         ]
       },
@@ -435,14 +364,8 @@
     "headerView": "advanced"
   };
 
-  // ====== INIT SURVEY ======
   if (!window.Survey || !Survey.Model) {
-    showErr(
-      "SurveyJS library did not load.\n" +
-      "Check these return 200:\n" +
-      "- https://unpkg.com/survey-core/survey.core.min.js\n" +
-      "- https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
-    );
+    showErr("SurveyJS library did not load (unpkg blocked?).");
   }
 
   const survey = new Survey.Model(surveyJson);
@@ -453,7 +376,7 @@
   survey.title = "";
   survey.description = "";
 
-  // ===== OTP MOUNT =====
+  // OTP Mount UI
   let otpHandlersBound = false;
 
   function renderOtpUI(mountEl) {
@@ -499,6 +422,7 @@
     document.addEventListener("click", async (ev) => {
       const id = ev.target && ev.target.id;
 
+      // ---- SEND OTP ----
       if (id === "otp_send") {
         const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
         if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
@@ -507,19 +431,25 @@
 
         try {
           const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
-console.log("sendOtp response:", r);
+          console.log("sendOtp response:", r);
 
-if (r && r.ok) {
-  document.getElementById("otp_row2").style.display = "flex";
-  setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
-  alert("OTP sent");
-} else {
-  setMsg(`<span class="otpBad">OTP send failed.</span><br>
-          <small>MSG91 HTTP: ${r?.msg91_http || ""}</small><br>
-          <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
-  alert("OTP send failed — see message below.");
-}
+          if (r && r.ok) {
+            document.getElementById("otp_row2").style.display = "flex";
+            setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
+            alert("OTP sent");
+          } else {
+            setMsg(`<span class="otpBad">OTP send failed.</span><br>
+              <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
+            alert("OTP send failed — see message below.");
+          }
+        } catch (e) {
+          showErr(e.message);
+          setMsg(`<span class="otpBad">${e.message}</span>`);
+          alert(e.message);
+        }
+      }
 
+      // ---- VERIFY OTP ----
       if (id === "otp_verify") {
         const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
         const otp = (document.getElementById("otp_code")?.value || "").trim();
@@ -530,18 +460,22 @@ if (r && r.ok) {
 
         try {
           const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`);
-console.log("verifyOtp response:", r);
+          console.log("verifyOtp response:", r);
 
-if (r && r.ok) {
-  survey.setValue("otpVerified", true);
-  survey.render();
-  alert("Mobile verified. You can now sign the consent.");
-} else {
-  setMsg(`<span class="otpBad">OTP verify failed.</span><br>
-          <small>MSG91 HTTP: ${r?.msg91_http || ""}</small><br>
-          <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
-  alert("OTP verify failed — see message below.");
-}
+          if (r && r.ok) {
+            survey.setValue("otpVerified", true);
+            survey.render();
+            alert("Mobile verified. You can now sign the consent.");
+          } else {
+            setMsg(`<span class="otpBad">OTP verify failed.</span><br>
+              <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
+            alert("OTP verify failed — see message below.");
+          }
+        } catch (e) {
+          showErr(e.message);
+          setMsg(`<span class="otpBad">${e.message}</span>`);
+          alert(e.message);
+        }
       }
     });
   }
@@ -553,7 +487,7 @@ if (r && r.ok) {
     }
   });
 
-  // Block moving away from Consent page until verified
+  // Block moving away from Consent until verified
   survey.onCurrentPageChanging.add((s, opt) => {
     const oldp = opt.oldCurrentPage;
     const newp = opt.newCurrentPage;
@@ -573,7 +507,7 @@ if (r && r.ok) {
     }
   });
 
-  // Submit to Google Sheets (fire-and-forget)
+  // Submit to Google Sheets
   survey.onComplete.add(async ({ data }) => {
     try {
       const mobile = String(survey.getValue("mobile_number") || "").trim();
@@ -597,9 +531,7 @@ if (r && r.ok) {
     }
   });
 
-  // Render
   survey.render(document.getElementById("surveyContainer"));
 </script>
 </body>
 </html>
-
