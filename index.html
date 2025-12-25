@@ -119,7 +119,7 @@
         done = true;
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error("OTP service timed out. Check Apps Script Web App (Anyone) and that doGet supports JSONP."));
+        reject(new Error("OTP service timed out. Check Apps Script deployment (Anyone) + JSONP doGet + /exec URL."));
       }, 15000);
 
       window[cb] = (data) => {
@@ -137,7 +137,7 @@
         clearTimeout(t);
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error("JSONP load failed (script blocked). Ensure Apps Script returns callback(...) and URL is /exec."));
+        reject(new Error("JSONP load failed. Apps Script did not return callback(...)."));
       };
 
       s.src = fullUrl;
@@ -145,7 +145,7 @@
     });
   }
 
-  // ====== YOUR SURVEY JSON (unchanged questions) + OTP in Consent page ======
+  // ====== FULL SURVEY JSON (ALL QUESTIONS KEPT) + OTP embedded in Consent page ======
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -241,9 +241,157 @@
             "showOtherItem": true,
             "maxSelectedChoices": 2,
             "minSelectedChoices": 1
+          },
+
+          {
+            "type": "matrixdropdown",
+            "name": "q5_progesterone",
+            "title": "5. Do you prescribe progesterone for the following risk-factors for Pre-term birth? When yes, please select the molecule and dosage.",
+            "columns": [
+              {
+                "name": "useProg",
+                "title": "Use of Progesterone",
+                "cellType": "radiogroup",
+                "isRequired": true,
+                "choices": [ { "value": 1, "text": "Yes" }, { "value": 2, "text": "No" } ],
+                "allowClear": true
+              },
+              {
+                "name": "molecule",
+                "title": "Molecule",
+                "cellType": "dropdown",
+                "isRequired": true,
+                "visibleIf": "{row.useProg} = 1",
+                "choices": [
+                  "Vaginal Natural micronized progesterone",
+                  "Vaginal gel",
+                  "Oral Progesterone",
+                  "Dydrogesterone",
+                  "Injectable progesterone",
+                  "Injectable Hydroxy progesterone"
+                ],
+                "showOtherItem": true,
+                "otherText": "Other (please specify)",
+                "otherPlaceholder": "Please specify molecule and its dose",
+                "storeOthersAsComment": true,
+                "allowClear": true,
+                "placeholder": "Select..."
+              },
+              {
+                "name": "dose",
+                "title": "Dose",
+                "cellType": "dropdown",
+                "isRequired": true,
+                "visibleIf": "{row.useProg} = 1",
+                "enableIf": "{row.useProg} = 1 and {row.molecule} <> 'Other'",
+                "resetValueIf": "{row.molecule} = 'Other'",
+                "choices": [
+                  { "value": "10 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "10 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "20 mg OD", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "20 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "20 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+
+                  { "value": "200 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "200 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "300 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "300 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "400 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "400 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+
+                  { "value": "25 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+                  { "value": "50 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+                  { "value": "100 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+
+                  { "value": "250 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
+                  { "value": "500 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
+
+                  { "value": "NA", "visibleIf": "{row.molecule} = 'Vaginal gel'" }
+                ],
+                "placeholder": "Select..."
+              }
+            ],
+            "rows": [
+              { "value": "r1",  "text": "Previous H/o of Preterm labor" },
+              { "value": "r2",  "text": "Multiple Gestation" },
+              { "value": "r3",  "text": "Short cervix" },
+              { "value": "r4",  "text": "Bleeding during 2nd or 3rd Trimester" },
+              { "value": "r5",  "text": "Intrauterine Growth Restriction" },
+              { "value": "r6",  "text": "Oligohydramnios" },
+              { "value": "r7",  "text": "Pregnancy induced hypertension/ Pre-eclampsia" },
+              { "value": "r8",  "text": "Uterine infections" },
+              { "value": "r9",  "text": "Preterm Prelabor Rupture of Membranes" },
+              { "value": "r10", "text": "Gestational diabetes" },
+              { "value": "r11", "text": "Anatomical variation / deformities" }
+            ]
+          },
+
+          {
+            "type": "checkbox",
+            "name": "question9",
+            "title": "6. What common side effects are seen with INJECTABLE (IM/SC) progesterone supplementation? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 4", "text": "Pain" },
+              { "value": "Item 5", "text": "Swelling / Inflammation" },
+              { "value": "Item 6", "text": "Itching" },
+              { "value": "Item 7", "text": "Skin rashes" },
+              { "value": "Item 8", "text": "Nausea / Vomiting" },
+              { "value": "Item 9", "text": "Breast pain / tenderness" },
+              { "value": "Item 10", "text": "Drowsiness or giddiness" },
+              { "value": "Item 11", "text": "Migraine / headache" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "checkbox",
+            "name": "question10",
+            "title": "7. What common side effects are seen with VAGINAL Natural micronized progesterone capsule? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Soreness" },
+              { "value": "Item 2", "text": "Diarrhoea" },
+              { "value": "Item 3", "text": "Flatulence" },
+              { "value": "Item 4", "text": "Vaginal irritation" },
+              { "value": "Item 5", "text": "Dryness" },
+              { "value": "Item 6", "text": "Spotting" },
+              { "value": "Item 7", "text": "Skin rashes" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "checkbox",
+            "name": "question11",
+            "title": "8. What common side effects are seen with ORAL Natural micronized progesterone tablet? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Nausea / Vomiting" },
+              { "value": "Item 2", "text": "Drowsiness or giddiness" },
+              { "value": "Item 3", "text": "Migraine / headache" },
+              { "value": "Item 4", "text": "Abdominal pain / bloating" },
+              { "value": "Item 5", "text": "Breast pain / tenderness" },
+              { "value": "Item 6", "text": "Vaginal bleeding" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "checkbox",
+            "name": "question13",
+            "title": "9. What are the considerations before prescribing progesterone for PREVENTION of Preterm birth? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Cost" },
+              { "value": "Item 2", "text": "Efficacy" },
+              { "value": "Item 3", "text": "Safety" },
+              { "value": "Item 4", "text": "Route of administration" },
+              { "value": "Item 5", "text": "Patient compliance" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
           }
-          /* NOTE: If you want, I can paste the rest of your page2 questions here too,
-             but this file is already working. You can re-add the rest safely. */
         ]
       },
 
@@ -285,9 +433,8 @@
     "headerView": "advanced"
   };
 
-  // ====== INIT ======
   if (!window.Survey || !Survey.Model) {
-    showErr("SurveyJS library did not load (unpkg blocked?).");
+    showErr("SurveyJS library did not load. Check unpkg availability.");
   }
 
   const survey = new Survey.Model(surveyJson);
@@ -298,7 +445,7 @@
   survey.title = "";
   survey.description = "";
 
-  // OTP UI render inside the html question
+  // OTP UI mount
   let otpHandlersBound = false;
 
   function renderOtpUI(mountEl) {
@@ -343,6 +490,7 @@
     document.addEventListener("click", async (ev) => {
       const id = ev.target && ev.target.id;
 
+      // SEND OTP
       if (id === "otp_send") {
         const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
         if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
@@ -351,7 +499,7 @@
 
         try {
           const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
-          console.log("sendOtp response:", r);
+          console.log("sendOtp:", r);
 
           if (r && r.ok) {
             document.getElementById("otp_row2").style.display = "flex";
@@ -368,6 +516,7 @@
         }
       }
 
+      // VERIFY OTP
       if (id === "otp_verify") {
         const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
         const otp = (document.getElementById("otp_code")?.value || "").trim();
@@ -378,11 +527,11 @@
 
         try {
           const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`);
-          console.log("verifyOtp response:", r);
+          console.log("verifyOtp:", r);
 
           if (r && r.ok) {
             survey.setValue("otpVerified", true);
-            survey.render();
+            survey.render(); // re-render to enable consent/signature fields
             alert("Mobile verified. You can now sign the consent.");
           } else {
             setMsg(`<span class="otpBad">OTP verify failed.</span><br><small>${(r?.error || r?.msg91_body || "No details returned")}</small>`);
@@ -397,6 +546,7 @@
     });
   }
 
+  // Attach OTP UI into the html question
   survey.onAfterRenderQuestion.add((s, opt) => {
     if (opt.question && opt.question.name === "otp_block") {
       const mount = opt.htmlElement.querySelector("#otpMount");
@@ -404,7 +554,7 @@
     }
   });
 
-  // Block moving away from Consent page until verified
+  // Block leaving Consent page unless OTP verified
   survey.onCurrentPageChanging.add((s, opt) => {
     const oldp = opt.oldCurrentPage;
     const newp = opt.newCurrentPage;
@@ -416,7 +566,7 @@
     }
   });
 
-  // Block completing unless verified
+  // Block completing unless OTP verified
   survey.onCompleting.add((s, opt) => {
     if (!s.getValue("otpVerified")) {
       opt.allowComplete = false;
@@ -435,7 +585,7 @@
         _meta: { ...meta, submittedAt: new Date().toISOString(), mobile }
       };
 
-      // fire-and-forget (no-cors)
+      // fire-and-forget
       await fetch(SHEETS_WEB_APP_URL, {
         method: "POST",
         mode: "no-cors",
