@@ -23,22 +23,11 @@
       white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
-    /* OTP box */
-    #otpBox {
-      border: 1px solid #ccc;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-
-    /* Survey hidden until OTP verified */
-    #surveyBlock { display: none; }
-
     /* Your custom header (guaranteed sizes) */
     .custom-header { margin-bottom: 16px; }
     .custom-title {
       font-family: "Questrial", Arial, sans-serif;
-      font-size: 14px;             /* EXACT size you want */
+      font-size: 14px;
       font-weight: 600;
       line-height: 1.35;
       letter-spacing: 0.2px;
@@ -46,11 +35,11 @@
     }
     .custom-description {
       font-family: "Questrial", Arial, sans-serif;
-      font-size: 12px;             /* EXACT size you want */
+      font-size: 12px;
       font-weight: 400;
       line-height: 1.5;
       color: #333;
-      white-space: pre-wrap;       /* keep line breaks from JSON */
+      white-space: pre-wrap;
       margin: 0;
     }
 
@@ -65,6 +54,21 @@
     #surveyContainer .sv-header {
       display: none !important;
     }
+
+    /* OTP box inside consent page */
+    .otpBox {
+      border: 1px solid #ccc;
+      padding: 14px;
+      border-radius: 8px;
+      margin: 10px 0 16px 0;
+      background: #fff;
+    }
+    .otpRow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .otpRow input { padding:10px; border:1px solid #ccc; border-radius:8px; min-width:240px; }
+    .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:8px; cursor:pointer; }
+    .otpHint { margin:8px 0 0 0; font-size:12px; color:#444; }
+    .otpOk { color:#0a7a0a; font-weight:600; }
+    .otpBad { color:#b00020; font-weight:600; }
   </style>
 </head>
 
@@ -73,30 +77,12 @@
   <noscript>Enable JavaScript to view this survey.</noscript>
   <div id="errbox"></div>
 
-  <!-- OTP SECTION -->
-  <div id="otpBox">
-    <h3>Mobile Verification</h3>
-    <p>Please verify your mobile number before proceeding to the survey.</p>
-
-    <input id="mobile" type="tel" placeholder="10-digit mobile number" />
-    <br><br>
-    <button id="sendOtpBtn" type="button">Send OTP</button>
-
-    <div id="otpVerify" style="display:none; margin-top:12px;">
-      <input id="otp" type="text" placeholder="Enter OTP" />
-      <br><br>
-      <button id="verifyOtpBtn" type="button">Verify OTP</button>
-    </div>
+  <div class="custom-header">
+    <h3 id="customTitle" class="custom-title"></h3>
+    <p id="customDesc" class="custom-description"></p>
   </div>
 
-  <!-- SURVEY BLOCK (hidden until OTP verified) -->
-  <div id="surveyBlock">
-    <div class="custom-header">
-      <h3 id="customTitle" class="custom-title"></h3>
-      <p id="customDesc" class="custom-description"></p>
-    </div>
-    <div id="surveyContainer"></div>
-  </div>
+  <div id="surveyContainer"></div>
 </div>
 
 <script>
@@ -118,396 +104,484 @@
     showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
   });
 
-  // ====== OTP FUNCTIONS ======
-  async function sendOTP() {
-    const mobile = document.getElementById("mobile").value.trim();
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      alert("Enter valid mobile number");
-      return;
-    }
+  // ====== YOUR SURVEY JSON (mostly unchanged) ======
+  const surveyJson = {
+    "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
+    "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
+    "pages": [
+      {
+        "name": "page1",
+        "title": "Consent",
+        "description": "To, \r\nCipla Ltd \r\nPeninsula Business Park \r\nGanpatrao Kadam Marg \r\nLower Parel, Mumbai – 400013 \r\n\r\nDear Sir/Madam,\r\nI understand that the objective of this survey is to understand the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth. I hereby agree to share my experience with Cipla Limited (hereinafter “Cipla”) and that Cipla shall have the unfettered right to use it in perpetuity, in all forms of media including but not limited to print, audio, video, website, internet and such other media which is in existence today for display, exhibition, broadcast, transmission, communication or any other media which may come into existence at a future date.\r\nI understand that Cipla shall have all rights to edit, reproduce, adapt, create derivative works or translate any information, views and opinion expressed by me as it deems fit, for the above-mentioned purpose, without my approval. I agree that this is not intended for any promotion or advertisement of any pharmaceutical product.\r\nI hereby confirm that I shall notify Cipla, if I attain a position to influence purchasing decisions of a government entity of health-care-related institution owned or substantially controlled by a government or public body. Such purchasing decisions may relate, for instance, to tenders issued by health authorities or decisions of formulary committees of public hospitals. Where such notification to Cipla is not permitted by local laws, regulations, I shall notify the purchase decision-maker in said government entity, institution or hospital of my relationship with Cipla before any purchasing decision is made.\r\nI am aware of and shall always abide by all the applicable laws governing medical professionals. I expressly release Cipla Limited, it’s employees, representatives, agents etc. from and against any and all claims arising out of the uses herein granted, including without limitation any claims for libel or violation of any right of publicity or privacy.\r\n\r\n\r\nDATA COLLECTION\r\nFill the e-questionnaire form provided to you. The e-questionnaire filled by you will be sent to a statistical agency for data entry and statistical analysis. The doctors will gain access to the e-survey on a dedicated link. The doctor will be prompted digitally to provide his consent and to complete the survey. The confidentiality of data would be maintained as the responses would be totally anonymous as they would be entered with each answer in the server. Proceeding to the next question (including concluding the survey) would be contingent upon answering its previous one, thus ensuring that all respondents answer all questions. The data captured on the Cipla server would only be shared with a statistical agency for analysis. Following doctor data will be collected as a part of the survey – \r\n1.\tDoctor name, age\r\n2.\tName of hospital \r\n3.\tState, city/town\r\n4.\tQualification\r\n5.\tPractice setting \r\n6.\tYears of practice\n",
+        "elements": [
+          {
+            "type": "html",
+            "name": "otp_block",
+            "html": "<div id='otpMount'></div>"
+          },
 
-    try {
-      const res = await fetch(GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "sendOtp", mobile })
-      });
+          /* Hidden fields to store OTP status + mobile (added) */
+          { "type": "boolean", "name": "otpVerified", "defaultValue": false, "visible": false },
+          { "type": "text", "name": "mobile_number", "visible": false },
 
-      // Some GAS deployments return no JSON for sendOtp; that's OK.
-      document.getElementById("otpVerify").style.display = "block";
-      alert("OTP sent");
-    } catch (e) {
-      showErr("sendOTP failed:\n" + (e && e.stack ? e.stack : e));
-      alert("Failed to send OTP. Please try again.");
-    }
-  }
+          /* Your existing consent/signature fields, now enabled only after OTP verified */
+          {
+            "type": "checkbox",
+            "name": "question2",
+            "title": "DATA SHARING CONSENT DECLARATION BY HEALTH CARE PROFESSIONAL\nKindly sign below after agreeing on each of the statement.",
+            "isRequired": true,
+            "enableIf": "{otpVerified} = true",
+            "choices": [
+              { "value": "Item 1", "text": "I confirm that I have read and understood the survey protocol." },
+              { "value": "Item 2", "text": "I agree not to restrict the use of any data or results that arise from this survey provided such a use is only for scientific purpose(s)." },
+              { "value": "Item 3", "text": "I agree to share medical data for the above survey." }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 3
+          },
+          { "type": "text", "name": "question1", "title": "Name of the healthcare professional", "isRequired": true, "enableIf": "{otpVerified} = true" },
+          { "type": "signaturepad", "name": "question3", "title": "Signature", "isRequired": true, "enableIf": "{otpVerified} = true" },
+          { "type": "text", "name": "question4", "title": "Date", "isRequired": true, "inputType": "date", "enableIf": "{otpVerified} = true" }
+        ]
+      },
 
-  async function verifyOTP() {
-    const mobile = document.getElementById("mobile").value.trim();
-    const otp = document.getElementById("otp").value.trim();
+      /* Your other pages unchanged */
+      {
+        "name": "page2",
+        "elements": [
+          {
+            "type": "radiogroup",
+            "name": "question5",
+            "title": "1. Out of total deliveries at your hospital, approximately what percentage of deliveries are pre-term?",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "0-5%" },
+              { "value": "Item 2", "text": "6-10%" },
+              { "value": "Item 3", "text": "11-15%" },
+              { "value": "Item 4", "text": "16-20%" },
+              { "value": "Item 5", "text": ">20%" }
+            ]
+          },
+          {
+            "type": "radiogroup",
+            "name": "question6",
+            "title": "2. In your practice, approximately what percentage of pregnancies need treatment for PREVENTION of pre-term delivery?",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "<10%" },
+              { "value": "Item 2", "text": "10-20%" },
+              { "value": "Item 3", "text": "21-30%" },
+              { "value": "Item 4", "text": "31-40%" },
+              { "value": "Item 5", "text": ">40%" }
+            ]
+          },
+          {
+            "type": "checkbox",
+            "name": "question7",
+            "title": "3. Common risk factors related to pre-term delivery (select 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "History of previous pre-term" },
+              { "value": "Item 2", "text": "Multiple gestation" },
+              { "value": "Item 3", "text": "Short cervix (< 2.5 cm)" },
+              { "value": "Item 4", "text": "Preeclampsia" },
+              { "value": "Item 5", "text": "Infections" },
+              { "value": "Item 6", "text": "Gestational diabetes" },
+              { "value": "Item 7", "text": "Spontaneous Pre-term (Idiopathic)" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 3
+          },
+          {
+            "type": "checkbox",
+            "name": "question8",
+            "title": "4. Preferred route of progesterone support? (select maximum two options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Vaginal" },
+              { "value": "Item 2", "text": "Oral" },
+              { "value": "Item 3", "text": "Injectable" },
+              { "value": "Item 4", "text": "Rectal" },
+              { "value": "Item 5", "text": "Vaginal + Injectable" },
+              { "value": "Item 6", "text": "Oral + Injectable" }
+            ],
+            "showOtherItem": true,
+            "maxSelectedChoices": 2,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "matrixdropdown",
+            "name": "q5_progesterone",
+            "title": "5. Do you prescribe progesterone for the following risk-factors for Pre-term birth? When yes, please select the molecule and dosage.",
+            "columns": [
+              {
+                "name": "useProg",
+                "title": "Use of Progesterone",
+                "cellType": "radiogroup",
+                "isRequired": true,
+                "choices": [ { "value": 1, "text": "Yes" }, { "value": 2, "text": "No" } ],
+                "allowClear": true
+              },
+              {
+                "name": "molecule",
+                "title": "Molecule",
+                "cellType": "dropdown",
+                "isRequired": true,
+                "visibleIf": "{row.useProg} = 1",
+                "choices": [
+                  "Vaginal Natural micronized progesterone",
+                  "Vaginal gel",
+                  "Oral Progesterone",
+                  "Dydrogesterone",
+                  "Injectable progesterone",
+                  "Injectable Hydroxy progesterone"
+                ],
+                "showOtherItem": true,
+                "otherText": "Other (please specify)",
+                "otherPlaceholder": "Please specify molecule and its dose",
+                "storeOthersAsComment": true,
+                "allowClear": true,
+                "placeholder": "Select..."
+              },
+              {
+                "name": "dose",
+                "title": "Dose",
+                "cellType": "dropdown",
+                "isRequired": true,
+                "visibleIf": "{row.useProg} = 1",
+                "enableIf": "{row.useProg} = 1 and {row.molecule} <> 'Other'",
+                "resetValueIf": "{row.molecule} = 'Other'",
+                "choices": [
+                  { "value": "10 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "10 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "20 mg OD", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "20 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+                  { "value": "20 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
 
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      alert("Enter valid mobile number");
-      return;
-    }
-    if (!otp) {
-      alert("Enter OTP");
-      return;
-    }
+                  { "value": "200 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "200 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "300 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "300 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "400 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+                  { "value": "400 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
 
-    try {
-      const r = await fetch(GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verifyOtp", mobile, otp })
-      });
+                  { "value": "25 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+                  { "value": "50 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+                  { "value": "100 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
 
-      const res = await r.json().catch(() => null);
-      if (res && res.ok) {
-        document.getElementById("otpBox").style.display = "none";
-        document.getElementById("surveyBlock").style.display = "block";
-        initSurveyOnce();
-      } else {
-        alert("Invalid OTP");
+                  { "value": "250 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
+                  { "value": "500 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
+
+                  { "value": "NA", "visibleIf": "{row.molecule} = 'Vaginal gel'" }
+                ],
+                "placeholder": "Select..."
+              }
+            ],
+            "rows": [
+              { "value": "r1",  "text": "Previous H/o of Preterm labor" },
+              { "value": "r2",  "text": "Multiple Gestation" },
+              { "value": "r3",  "text": "Short cervix" },
+              { "value": "r4",  "text": "Bleeding during 2nd or 3rd Trimester" },
+              { "value": "r5",  "text": "Intrauterine Growth Restriction" },
+              { "value": "r6",  "text": "Oligohydramnios" },
+              { "value": "r7",  "text": "Pregnancy induced hypertension/ Pre-eclampsia" },
+              { "value": "r8",  "text": "Uterine infections" },
+              { "value": "r9",  "text": "Preterm Prelabor Rupture of Membranes" },
+              { "value": "r10", "text": "Gestational diabetes" },
+              { "value": "r11", "text": "Anatomical variation / deformities" }
+            ]
+          },
+          {
+            "type": "checkbox",
+            "name": "question9",
+            "title": "6. What common side effects are seen with INJECTABLE (IM/SC) progesterone supplementation? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 4", "text": "Pain" },
+              { "value": "Item 5", "text": "Swelling / Inflammation" },
+              { "value": "Item 6", "text": "Itching" },
+              { "value": "Item 7", "text": "Skin rashes" },
+              { "value": "Item 8", "text": "Nausea / Vomiting" },
+              { "value": "Item 9", "text": "Breast pain / tenderness" },
+              { "value": "Item 10", "text": "Drowsiness or giddiness" },
+              { "value": "Item 11", "text": "Migraine / headache" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "checkbox",
+            "name": "question10",
+            "title": "7. What common side effects are seen with VAGINAL Natural micronized progesterone capsule? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Soreness" },
+              { "value": "Item 2", "text": "Diarrhoea" },
+              { "value": "Item 3", "text": "Flatulence" },
+              { "value": "Item 4", "text": "Vaginal irritation" },
+              { "value": "Item 5", "text": "Dryness" },
+              { "value": "Item 6", "text": "Spotting" },
+              { "value": "Item 7", "text": "Skin rashes" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "checkbox",
+            "name": "question11",
+            "title": "8. What common side effects are seen with ORAL Natural micronized progesterone tablet? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Nausea / Vomiting" },
+              { "value": "Item 2", "text": "Drowsiness or giddiness" },
+              { "value": "Item 3", "text": "Migraine / headache" },
+              { "value": "Item 4", "text": "Abdominal pain / bloating" },
+              { "value": "Item 5", "text": "Breast pain / tenderness" },
+              { "value": "Item 6", "text": "Vaginal bleeding" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          },
+          {
+            "type": "checkbox",
+            "name": "question13",
+            "title": "9. What are the considerations before prescribing progesterone for PREVENTION of Preterm birth? (select maximum 3 options)",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Cost" },
+              { "value": "Item 2", "text": "Efficacy" },
+              { "value": "Item 3", "text": "Safety" },
+              { "value": "Item 4", "text": "Route of administration" },
+              { "value": "Item 5", "text": "Patient compliance" }
+            ],
+            "maxSelectedChoices": 3,
+            "minSelectedChoices": 1
+          }
+        ]
+      },
+      {
+        "name": "page3",
+        "elements": [
+          { "type": "text", "name": "question12", "title": "Email-id", "isRequired": true },
+          { "type": "text", "name": "question15", "title": "Age", "isRequired": true },
+          {
+            "type": "radiogroup",
+            "name": "question16",
+            "title": "Years of clinical experience",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "<5 years" },
+              { "value": "Item 2", "text": "5-10 years" },
+              { "value": "Item 3", "text": "11-20 years" },
+              { "value": "Item 4", "text": ">20 years" }
+            ]
+          },
+          {
+            "type": "checkbox",
+            "name": "question17",
+            "title": "Pre-dominant type of practice",
+            "isRequired": true,
+            "choices": [
+              { "value": "Item 1", "text": "Multi-specialty Hospital" },
+              { "value": "Item 2", "text": "Clinic / Nursing Home" },
+              { "value": "Item 3", "text": "Government Hospital / Medical College" },
+              { "value": "Item 4", "text": "Mixed Practice" }
+            ],
+            "minSelectedChoices": 1,
+            "maxSelectedChoices": 1
+          },
+          { "type": "text", "name": "question14", "title": "Address (City and State)", "isRequired": true }
+        ]
       }
-    } catch (e) {
-      showErr("verifyOTP failed:\n" + (e && e.stack ? e.stack : e));
-      alert("OTP verification failed. Please try again.");
-    }
+    ],
+    "headerView": "advanced"
+  };
+
+  // ====== INIT SURVEY ======
+  if (!window.Survey || !Survey.Model) {
+    showErr(
+      "SurveyJS library did not load.\n" +
+      "Check Network tab for these files returning 200:\n" +
+      "- https://unpkg.com/survey-core/survey.core.min.js\n" +
+      "- https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
+    );
   }
 
-  document.getElementById("sendOtpBtn").addEventListener("click", sendOTP);
-  document.getElementById("verifyOtpBtn").addEventListener("click", verifyOTP);
+  const survey = new Survey.Model(surveyJson);
 
-  // ====== SURVEY INIT (ONLY ONCE) ======
-  let _surveyInitialized = false;
-  function initSurveyOnce() {
-    if (_surveyInitialized) return;
-    _surveyInitialized = true;
+  // Move title/description into custom header
+  const customTitle = survey.title || "";
+  const customDesc  = survey.description || "";
+  survey.title = "";
+  survey.description = "";
+  document.getElementById("customTitle").textContent = customTitle;
+  document.getElementById("customDesc").textContent  = customDesc;
 
-    if (!window.Survey || !Survey.Model) {
-      showErr(
-        "SurveyJS library did not load.\n" +
-        "Check Network tab for these files returning 200:\n" +
-        "- https://unpkg.com/survey-core/survey.core.min.js\n" +
-        "- https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
-      );
+  // ====== OTP UI + LOGIC (inside page1) ======
+  let otpUIBound = false;
+
+  function mountOtpUI(containerEl) {
+    if (!containerEl) return;
+
+    // If already verified, show a simple "verified" message
+    const isVerified = !!survey.getValue("otpVerified");
+    if (isVerified) {
+      containerEl.innerHTML = `
+        <div class="otpBox">
+          <div class="otpOk">✅ Mobile verified.</div>
+          <div class="otpHint">You can proceed with consent and signature.</div>
+        </div>`;
       return;
     }
 
-    // === YOUR SURVEY JSON (UNCHANGED) ===
-    const surveyJson = {
-      "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
-      "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
-      "pages": [
-        {
-          "name": "page1",
-          "title": "Consent",
-          "description": "To, \r\nCipla Ltd \r\nPeninsula Business Park \r\nGanpatrao Kadam Marg \r\nLower Parel, Mumbai – 400013 \r\n\r\nDear Sir/Madam,\r\nI understand that the objective of this survey is to understand the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth. I hereby agree to share my experience with Cipla Limited (hereinafter “Cipla”) and that Cipla shall have the unfettered right to use it in perpetuity, in all forms of media including but not limited to print, audio, video, website, internet and such other media which is in existence today for display, exhibition, broadcast, transmission, communication or any other media which may come into existence at a future date.\r\nI understand that Cipla shall have all rights to edit, reproduce, adapt, create derivative works or translate any information, views and opinion expressed by me as it deems fit, for the above-mentioned purpose, without my approval. I agree that this is not intended for any promotion or advertisement of any pharmaceutical product.\r\nI hereby confirm that I shall notify Cipla, if I attain a position to influence purchasing decisions of a government entity of health-care-related institution owned or substantially controlled by a government or public body. Such purchasing decisions may relate, for instance, to tenders issued by health authorities or decisions of formulary committees of public hospitals. Where such notification to Cipla is not permitted by local laws, regulations, I shall notify the purchase decision-maker in said government entity, institution or hospital of my relationship with Cipla before any purchasing decision is made.\r\nI am aware of and shall always abide by all the applicable laws governing medical professionals. I expressly release Cipla Limited, it’s employees, representatives, agents etc. from and against any and all claims arising out of the uses herein granted, including without limitation any claims for libel or violation of any right of publicity or privacy.\r\n\r\n\r\nDATA COLLECTION\r\nFill the e-questionnaire form provided to you. The e-questionnaire filled by you will be sent to a statistical agency for data entry and statistical analysis. The doctors will gain access to the e-survey on a dedicated link. The doctor will be prompted digitally to provide his consent and to complete the survey. The confidentiality of data would be maintained as the responses would be totally anonymous as they would be entered with each answer in the server. Proceeding to the next question (including concluding the survey) would be contingent upon answering its previous one, thus ensuring that all respondents answer all questions. The data captured on the Cipla server would only be shared with a statistical agency for analysis. Following doctor data will be collected as a part of the survey – \r\n1.\tDoctor name, age\r\n2.\tName of hospital \r\n3.\tState, city/town\r\n4.\tQualification\r\n5.\tPractice setting \r\n6.\tYears of practice\n",
-          "elements": [
-            {
-              "type": "checkbox",
-              "name": "question2",
-              "title": "DATA SHARING CONSENT DECLARATION BY HEALTH CARE PROFESSIONAL\nKindly sign below after agreeing on each of the statement.",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "I confirm that I have read and understood the survey protocol." },
-                { "value": "Item 2", "text": "I agree not to restrict the use of any data or results that arise from this survey provided such a use is only for scientific purpose(s)." },
-                { "value": "Item 3", "text": "I agree to share medical data for the above survey." }
-              ],
-              "maxSelectedChoices": 3,
-              "minSelectedChoices": 3
-            },
-            { "type": "text", "name": "question1", "title": "Name of the healthcare professional", "isRequired": true },
-            { "type": "signaturepad", "name": "question3", "title": "Signature", "isRequired": true },
-            { "type": "text", "name": "question4", "title": "Date", "isRequired": true, "inputType": "date" }
-          ]
-        },
-        {
-          "name": "page2",
-          "elements": [
-            {
-              "type": "radiogroup",
-              "name": "question5",
-              "title": "1. Out of total deliveries at your hospital, approximately what percentage of deliveries are pre-term?",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "0-5%" },
-                { "value": "Item 2", "text": "6-10%" },
-                { "value": "Item 3", "text": "11-15%" },
-                { "value": "Item 4", "text": "16-20%" },
-                { "value": "Item 5", "text": ">20%" }
-              ]
-            },
-            {
-              "type": "radiogroup",
-              "name": "question6",
-              "title": "2. In your practice, approximately what percentage of pregnancies need treatment for PREVENTION of pre-term delivery?",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "<10%" },
-                { "value": "Item 2", "text": "10-20%" },
-                { "value": "Item 3", "text": "21-30%" },
-                { "value": "Item 4", "text": "31-40%" },
-                { "value": "Item 5", "text": ">40%" }
-              ]
-            },
-            {
-              "type": "checkbox",
-              "name": "question7",
-              "title": "3. Common risk factors related to pre-term delivery (select 3 options)",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "History of previous pre-term" },
-                { "value": "Item 2", "text": "Multiple gestation" },
-                { "value": "Item 3", "text": "Short cervix (< 2.5 cm)" },
-                { "value": "Item 4", "text": "Preeclampsia" },
-                { "value": "Item 5", "text": "Infections" },
-                { "value": "Item 6", "text": "Gestational diabetes" },
-                { "value": "Item 7", "text": "Spontaneous Pre-term (Idiopathic)" }
-              ],
-              "maxSelectedChoices": 3,
-              "minSelectedChoices": 3
-            },
-            {
-              "type": "checkbox",
-              "name": "question8",
-              "title": "4. Preferred route of progesterone support? (select maximum two options)",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "Vaginal" },
-                { "value": "Item 2", "text": "Oral" },
-                { "value": "Item 3", "text": "Injectable" },
-                { "value": "Item 4", "text": "Rectal" },
-                { "value": "Item 5", "text": "Vaginal + Injectable" },
-                { "value": "Item 6", "text": "Oral + Injectable" }
-              ],
-              "showOtherItem": true,
-              "maxSelectedChoices": 2,
-              "minSelectedChoices": 1
-            },
-            {
-              "type": "matrixdropdown",
-              "name": "q5_progesterone",
-              "title": "5. Do you prescribe progesterone for the following risk-factors for Pre-term birth? When yes, please select the molecule and dosage.",
-              "columns": [
-                {
-                  "name": "useProg",
-                  "title": "Use of Progesterone",
-                  "cellType": "radiogroup",
-                  "isRequired": true,
-                  "choices": [ { "value": 1, "text": "Yes" }, { "value": 2, "text": "No" } ],
-                  "allowClear": true
-                },
-                {
-                  "name": "molecule",
-                  "title": "Molecule",
-                  "cellType": "dropdown",
-                  "isRequired": true,
-                  "visibleIf": "{row.useProg} = 1",
-                  "choices": [
-                    "Vaginal Natural micronized progesterone",
-                    "Vaginal gel",
-                    "Oral Progesterone",
-                    "Dydrogesterone",
-                    "Injectable progesterone",
-                    "Injectable Hydroxy progesterone"
-                  ],
-                  "showOtherItem": true,
-                  "otherText": "Other (please specify)",
-                  "otherPlaceholder": "Please specify molecule and its dose",
-                  "storeOthersAsComment": true,
-                  "allowClear": true,
-                  "placeholder": "Select..."
-                },
-                {
-                  "name": "dose",
-                  "title": "Dose",
-                  "cellType": "dropdown",
-                  "isRequired": true,
-                  "visibleIf": "{row.useProg} = 1",
-                  "enableIf": "{row.useProg} = 1 and {row.molecule} <> 'Other'",
-                  "resetValueIf": "{row.molecule} = 'Other'",
-                  "choices": [
-                    { "value": "10 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
-                    { "value": "10 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
-                    { "value": "20 mg OD", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
-                    { "value": "20 mg BID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
-                    { "value": "20 mg TID", "visibleIf": "{row.molecule} = 'Dydrogesterone'" },
+    containerEl.innerHTML = `
+      <div class="otpBox">
+        <div style="font-weight:700; margin-bottom:6px;">Mobile Verification</div>
+        <div class="otpHint" style="margin-bottom:10px;">
+          Please verify your mobile number to enable consent and signature.
+        </div>
 
-                    { "value": "200 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
-                    { "value": "200 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
-                    { "value": "300 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
-                    { "value": "300 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
-                    { "value": "400 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
-                    { "value": "400 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
+        <div class="otpRow">
+          <input id="otp_mobile" type="tel" placeholder="10-digit mobile number" inputmode="numeric" />
+          <button id="otp_sendBtn" type="button">Send OTP</button>
+        </div>
 
-                    { "value": "25 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
-                    { "value": "50 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
-                    { "value": "100 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+        <div id="otp_verifyRow" class="otpRow" style="margin-top:10px; display:none;">
+          <input id="otp_code" type="text" placeholder="Enter OTP" inputmode="numeric" />
+          <button id="otp_verifyBtn" type="button">Verify OTP</button>
+        </div>
 
-                    { "value": "250 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
-                    { "value": "500 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
+        <div id="otp_msg" class="otpHint"></div>
+      </div>
+    `;
 
-                    { "value": "NA", "visibleIf": "{row.molecule} = 'Vaginal gel'" }
-                  ],
-                  "placeholder": "Select..."
-                }
-              ],
-              "rows": [
-                { "value": "r1",  "text": "Previous H/o of Preterm labor" },
-                { "value": "r2",  "text": "Multiple Gestation" },
-                { "value": "r3",  "text": "Short cervix" },
-                { "value": "r4",  "text": "Bleeding during 2nd or 3rd Trimester" },
-                { "value": "r5",  "text": "Intrauterine Growth Restriction" },
-                { "value": "r6",  "text": "Oligohydramnios" },
-                { "value": "r7",  "text": "Pregnancy induced hypertension/ Pre-eclampsia" },
-                { "value": "r8",  "text": "Uterine infections" },
-                { "value": "r9",  "text": "Preterm Prelabor Rupture of Membranes" },
-                { "value": "r10", "text": "Gestational diabetes" },
-                { "value": "r11", "text": "Anatomical variation / deformities" }
-              ]
-            },
-            {
-              "type": "checkbox",
-              "name": "question9",
-              "title": "6. What common side effects are seen with INJECTABLE (IM/SC) progesterone supplementation? (select maximum 3 options)",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 4", "text": "Pain" },
-                { "value": "Item 5", "text": "Swelling / Inflammation" },
-                { "value": "Item 6", "text": "Itching" },
-                { "value": "Item 7", "text": "Skin rashes" },
-                { "value": "Item 8", "text": "Nausea / Vomiting" },
-                { "value": "Item 9", "text": "Breast pain / tenderness" },
-                { "value": "Item 10", "text": "Drowsiness or giddiness" },
-                { "value": "Item 11", "text": "Migraine / headache" }
-              ],
-              "maxSelectedChoices": 3,
-              "minSelectedChoices": 1
-            },
-            {
-              "type": "checkbox",
-              "name": "question10",
-              "title": "7. What common side effects are seen with VAGINAL Natural micronized progesterone capsule? (select maximum 3 options)",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "Soreness" },
-                { "value": "Item 2", "text": "Diarrhoea" },
-                { "value": "Item 3", "text": "Flatulence" },
-                { "value": "Item 4", "text": "Vaginal irritation" },
-                { "value": "Item 5", "text": "Dryness" },
-                { "value": "Item 6", "text": "Spotting" },
-                { "value": "Item 7", "text": "Skin rashes" }
-              ],
-              "maxSelectedChoices": 3,
-              "minSelectedChoices": 1
-            },
-            {
-              "type": "checkbox",
-              "name": "question11",
-              "title": "8. What common side effects are seen with ORAL Natural micronized progesterone tablet? (select maximum 3 options)",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "Nausea / Vomiting" },
-                { "value": "Item 2", "text": "Drowsiness or giddiness" },
-                { "value": "Item 3", "text": "Migraine / headache" },
-                { "value": "Item 4", "text": "Abdominal pain / bloating" },
-                { "value": "Item 5", "text": "Breast pain / tenderness" },
-                { "value": "Item 6", "text": "Vaginal bleeding" }
-              ],
-              "maxSelectedChoices": 3,
-              "minSelectedChoices": 1
-            },
-            {
-              "type": "checkbox",
-              "name": "question13",
-              "title": "9. What are the considerations before prescribing progesterone for PREVENTION of Preterm birth? (select maximum 3 options)",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "Cost" },
-                { "value": "Item 2", "text": "Efficacy" },
-                { "value": "Item 3", "text": "Safety" },
-                { "value": "Item 4", "text": "Route of administration" },
-                { "value": "Item 5", "text": "Patient compliance" }
-              ],
-              "maxSelectedChoices": 3,
-              "minSelectedChoices": 1
-            }
-          ]
-        },
-        {
-          "name": "page3",
-          "elements": [
-            { "type": "text", "name": "question12", "title": "Email-id", "isRequired": true },
-            { "type": "text", "name": "question15", "title": "Age", "isRequired": true },
-            {
-              "type": "radiogroup",
-              "name": "question16",
-              "title": "Years of clinical experience",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "<5 years" },
-                { "value": "Item 2", "text": "5-10 years" },
-                { "value": "Item 3", "text": "11-20 years" },
-                { "value": "Item 4", "text": ">20 years" }
-              ]
-            },
-            {
-              "type": "checkbox",
-              "name": "question17",
-              "title": "Pre-dominant type of practice",
-              "isRequired": true,
-              "choices": [
-                { "value": "Item 1", "text": "Multi-specialty Hospital" },
-                { "value": "Item 2", "text": "Clinic / Nursing Home" },
-                { "value": "Item 3", "text": "Government Hospital / Medical College" },
-                { "value": "Item 4", "text": "Mixed Practice" }
-              ],
-              "minSelectedChoices": 1,
-              "maxSelectedChoices": 1
-            },
-            { "type": "text", "name": "question14", "title": "Address (City and State)", "isRequired": true }
-          ]
-        }
-      ],
-      "headerView": "advanced"
-    };
+    if (otpUIBound) return;
+    otpUIBound = true;
 
-    const survey = new Survey.Model(surveyJson);
+    const msgEl = () => document.getElementById("otp_msg");
 
-    // Move title/description into custom header
-    const customTitle = survey.title || "";
-    const customDesc  = survey.description || "";
-    survey.title = "";
-    survey.description = "";
-    document.getElementById("customTitle").textContent = customTitle;
-    document.getElementById("customDesc").textContent  = customDesc;
+    async function sendOTP() {
+      const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        alert("Enter valid mobile number");
+        return;
+      }
 
-    // Submit to Google Sheets
-    survey.onComplete.add(async ({ data }) => {
+      // store mobile in hidden field
+      survey.setValue("mobile_number", mobile);
+
       try {
-        const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
-        const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
-
-        // NOTE: no-cors means you can't read response; fine for "fire-and-forget"
-        await fetch(SHEETS_WEB_APP_URL, {
+        await fetch(GAS_URL, {
           method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "sendOtp", mobile })
         });
 
-        alert("Thanks! Your response has been recorded.");
-      } catch (err) {
-        console.error(err);
-        alert("Submitted, but we couldn't confirm the save.");
+        document.getElementById("otp_verifyRow").style.display = "flex";
+        if (msgEl()) msgEl().innerHTML = `OTP sent to <b>${mobile}</b>.`;
+      } catch (e) {
+        showErr("sendOTP failed:\n" + (e && e.stack ? e.stack : e));
+        alert("Failed to send OTP. Please try again.");
       }
-    });
+    }
 
-    // Render survey
-    survey.render(document.getElementById("surveyContainer"));
+    async function verifyOTP() {
+      const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
+      const otp = (document.getElementById("otp_code")?.value || "").trim();
+
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        alert("Enter valid mobile number");
+        return;
+      }
+      if (!otp) {
+        alert("Enter OTP");
+        return;
+      }
+
+      // store mobile in hidden field (again)
+      survey.setValue("mobile_number", mobile);
+
+      try {
+        const r = await fetch(GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verifyOtp", mobile, otp })
+        });
+
+        const res = await r.json().catch(() => null);
+
+        if (res && res.ok) {
+          survey.setValue("otpVerified", true);
+
+          // Re-render the page so enableIf updates immediately
+          survey.render();
+
+          // Move user to top and show success
+          setTimeout(() => {
+            alert("Mobile verified. You can now sign the consent.");
+          }, 50);
+        } else {
+          if (msgEl()) msgEl().innerHTML = `<span class="otpBad">Invalid OTP.</span> Please retry.`;
+          alert("Invalid OTP");
+        }
+      } catch (e) {
+        showErr("verifyOTP failed:\n" + (e && e.stack ? e.stack : e));
+        alert("OTP verification failed. Please try again.");
+      }
+    }
+
+    document.addEventListener("click", (ev) => {
+      const id = ev.target && ev.target.id;
+      if (id === "otp_sendBtn") sendOTP();
+      if (id === "otp_verifyBtn") verifyOTP();
+    });
   }
+
+  // Inject OTP box into the html question on page1
+  survey.onAfterRenderQuestion.add((s, opt) => {
+    if (opt.question && opt.question.name === "otp_block") {
+      const mount = opt.htmlElement.querySelector("#otpMount");
+      mountOtpUI(mount);
+    }
+  });
+
+  // Block navigation away from page1 unless OTP verified
+  survey.onCurrentPageChanging.add((s, opt) => {
+    const curr = opt.oldCurrentPage;
+    const next = opt.newCurrentPage;
+    if (!curr || !next) return;
+
+    if (curr.name === "page1" && next.name !== "page1") {
+      const verified = !!s.getValue("otpVerified");
+      if (!verified) {
+        opt.allowChanging = false;
+        alert("Please verify your mobile number first.");
+      }
+    }
+  });
+
+  // Submit to Google Sheets
+  survey.onComplete.add(async ({ data }) => {
+    try {
+      const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
+      const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
+
+      await fetch(SHEETS_WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      alert("Thanks! Your response has been recorded.");
+    } catch (err) {
+      console.error(err);
+      alert("Submitted, but we couldn't confirm the save.");
+    }
+  });
+
+  // Render
+  survey.render(document.getElementById("surveyContainer"));
 </script>
 </body>
 </html>
