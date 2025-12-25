@@ -507,20 +507,18 @@
 
         try {
           const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
-          if (r && r.ok) {
-            document.getElementById("otp_row2").style.display = "flex";
-            setMsg(`OTP sent to <b>${mobile}</b>.`);
-            alert("OTP sent");
-          } else {
-            setMsg(`<span class="otpBad">OTP send failed.</span>`);
-            alert("OTP send failed");
-          }
-        } catch (e) {
-          showErr(e.message);
-          setMsg(`<span class="otpBad">${e.message}</span>`);
-          alert(e.message);
-        }
-      }
+console.log("sendOtp response:", r);
+
+if (r && r.ok) {
+  document.getElementById("otp_row2").style.display = "flex";
+  setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
+  alert("OTP sent");
+} else {
+  setMsg(`<span class="otpBad">OTP send failed.</span><br>
+          <small>MSG91 HTTP: ${r?.msg91_http || ""}</small><br>
+          <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
+  alert("OTP send failed — see message below.");
+}
 
       if (id === "otp_verify") {
         const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
@@ -532,19 +530,18 @@
 
         try {
           const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`);
-          if (r && r.ok) {
-            survey.setValue("otpVerified", true);
-            survey.render(); // refresh enableIf and re-render OTP block
-            alert("Mobile verified. You can now sign the consent.");
-          } else {
-            setMsg(`<span class="otpBad">Invalid OTP.</span>`);
-            alert("Invalid OTP");
-          }
-        } catch (e) {
-          showErr(e.message);
-          setMsg(`<span class="otpBad">${e.message}</span>`);
-          alert(e.message);
-        }
+console.log("verifyOtp response:", r);
+
+if (r && r.ok) {
+  survey.setValue("otpVerified", true);
+  survey.render();
+  alert("Mobile verified. You can now sign the consent.");
+} else {
+  setMsg(`<span class="otpBad">OTP verify failed.</span><br>
+          <small>MSG91 HTTP: ${r?.msg91_http || ""}</small><br>
+          <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
+  alert("OTP verify failed — see message below.");
+}
       }
     });
   }
@@ -605,3 +602,4 @@
 </script>
 </body>
 </html>
+
