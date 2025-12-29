@@ -538,13 +538,13 @@
         </div>
 
         <div id="otp_msg" class="otpHint"></div>
-        <div id="otp_dbg" class="otpSmall"></div>
+        
       </div>
     `;
 
     const $ = (id) => mountEl.querySelector("#" + id);
     const setMsg = (html) => { const m = $("otp_msg"); if (m) m.innerHTML = html; };
-    const setDbg = (txt) => { const d = $("otp_dbg"); if (d) d.textContent = txt || ""; };
+    
 
     $("otp_send").addEventListener("click", async () => {
       const mobile = ($("otp_mobile").value || "").trim();
@@ -554,7 +554,7 @@
         await loadMsg91OtpSdkOnce();
       } catch (e) {
         setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`);
-        setDbg(String(e));
+       
         return;
       }
 
@@ -568,17 +568,17 @@
             $("otp_row2").style.display = "flex";
             survey.setValue("mobile_number", mobile);
             setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
-            setDbg("sendOtp response: " + JSON.stringify(data || {}));
+            
           },
           (err) => {
             setMsg(`<span class="otpBad">OTP send failed.</span>`);
-            setDbg("sendOtp error: " + JSON.stringify(err || {}));
+            
             alert("OTP send failed. See details below.");
           }
         );
       } catch (e) {
         setMsg(`<span class="otpBad">OTP send failed.</span>`);
-        setDbg(String(e));
+        
       }
     });
 
@@ -592,7 +592,7 @@
         await loadMsg91OtpSdkOnce();
       } catch (e) {
         setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`);
-        setDbg(String(e));
+        
         return;
       }
 
@@ -600,7 +600,7 @@
         window.verifyOtp(
           otp,
           async (data) => {
-            setDbg("verifyOtp response: " + JSON.stringify(data || {}));
+            
             const token = extractAccessToken(data);
 
             if (!token) {
@@ -623,24 +623,24 @@
                 survey.render();
               } else {
                 setMsg(`<span class="otpBad">Server verification failed.</span>`);
-                setDbg("Server response: " + JSON.stringify(v || {}));
+                
                 alert("Server verification failed. See details below.");
               }
             } catch (e) {
               setMsg(`<span class="otpBad">Server verification failed (JSONP).</span>`);
-              setDbg(String(e));
+              
             }
           },
           (err) => {
             setMsg(`<span class="otpBad">OTP verify failed.</span>`);
-            setDbg("verifyOtp error: " + JSON.stringify(err || {}));
+            
             alert("OTP verify failed. See details below.");
           },
           otpReqId || undefined
         );
       } catch (e) {
         setMsg(`<span class="otpBad">OTP verify failed.</span>`);
-        setDbg(String(e));
+        
       }
     });
   }
@@ -700,3 +700,4 @@
 </script>
 </body>
 </html>
+
