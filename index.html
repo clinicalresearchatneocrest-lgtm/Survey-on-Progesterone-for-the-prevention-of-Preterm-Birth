@@ -58,7 +58,6 @@
     .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:8px; cursor:pointer; }
     .otpOk { color:#0a7a0a; font-weight:700; }
     .otpBad { color:#b00020; font-weight:700; }
-    .otpSmall { font-size:12px; color:#555; margin-top:8px; word-break:break-word; }
   </style>
 </head>
 
@@ -85,10 +84,9 @@
   const MSG91_TOKEN_AUTH = "484544T7lf8amk695279ebP1";
   const COUNTRY_CODE = "91";
 
-  // ✅ NEW: keep verified values outside SurveyJS (SurveyJS can clear invisible values)
+  // Keep verified values OUTSIDE SurveyJS
   let VERIFIED_MOBILE = "";
   let VERIFIED_ACCESS_TOKEN = "";
-  try { VERIFIED_ACCESS_TOKEN = localStorage.getItem("MSG91_ACCESS_TOKEN") || ""; } catch {}
 
   /* ===================== ERROR BOX ===================== */
   const showErr = (msg) => {
@@ -169,11 +167,7 @@
         s.src = urls[i];
         s.async = true;
         s.onload = () => {
-          try {
-            if (typeof window.initSendOTP === "function") {
-              window.initSendOTP(configuration);
-            }
-          } catch {}
+          try { if (typeof window.initSendOTP === "function") window.initSendOTP(configuration); } catch {}
           setTimeout(() => {
             if (typeof window.sendOtp === "function" && typeof window.verifyOtp === "function") {
               _otpSdkReady = true;
@@ -207,12 +201,11 @@
     ).trim();
   }
 
-  /* ===================== FULL SURVEY JSON (all questions) ===================== */
+  /* ===================== YOUR FULL SURVEY JSON (unchanged) ===================== */
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
 
-    // ✅ CRITICAL: do not clear values for hidden/invisible questions
     "clearInvisibleValues": "none",
 
     "pages": [
@@ -497,15 +490,6 @@
     "headerView": "advanced"
   };
 
-  if (!window.Survey || !Survey.Model) {
-    showErr(
-      "SurveyJS library did not load.\n" +
-      "Check these return 200:\n" +
-      "- https://unpkg.com/survey-core/survey.core.min.js\n" +
-      "- https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
-    );
-  }
-
   const survey = new Survey.Model(surveyJson);
 
   // Move title/description into custom header
@@ -514,7 +498,7 @@
   survey.title = "";
   survey.description = "";
 
-  /* ===================== OTP UI (inside Consent page) ===================== */
+  /* ===================== OTP UI ===================== */
   let otpReqId = "";
 
   function renderOtpUI(mountEl) {
@@ -555,36 +539,27 @@
       const mobile = ($("otp_mobile").value || "").trim();
       if (!/^[6-9]\d{9}$/.test(mobile)) { alert("Enter valid mobile number"); return; }
 
-      try {
-        await loadMsg91OtpSdkOnce();
-      } catch (e) {
-        setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`);
-        return;
-      }
+      try { await loadMsg91OtpSdkOnce(); }
+      catch (e) { setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`); return; }
 
       const identifier = COUNTRY_CODE + mobile;
 
-      try {
-        window.sendOtp(
-          identifier,
-          (data) => {
-            otpReqId = data?.reqId || data?.request_id || data?.requestId || "";
-            $("otp_row2").style.display = "flex";
+      window.sendOtp(
+        identifier,
+        (data) => {
+          otpReqId = data?.reqId || data?.request_id || data?.requestId || "";
+          $("otp_row2").style.display = "flex";
 
-            // ✅ keep mobile in BOTH: SurveyJS + our safe variable
-            VERIFIED_MOBILE = mobile;
-            survey.setValue("mobile_number", mobile);
+          VERIFIED_MOBILE = mobile;
+          survey.setValue("mobile_number", mobile);
 
-            setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
-          },
-          () => {
-            setMsg(`<span class="otpBad">OTP send failed.</span>`);
-            alert("OTP send failed. Please try again.");
-          }
-        );
-      } catch (e) {
-        setMsg(`<span class="otpBad">OTP send failed.</span>`);
-      }
+          setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
+        },
+        () => {
+          setMsg(`<span class="otpBad">OTP send failed.</span>`);
+          alert("OTP send failed. Please try again.");
+        }
+      );
     });
 
     $("otp_verify").addEventListener("click", async () => {
@@ -593,61 +568,39 @@
       if (!/^[6-9]\d{9}$/.test(mobile)) { alert("Enter valid mobile number"); return; }
       if (!/^\d{4,8}$/.test(otp)) { alert("Enter valid OTP"); return; }
 
-      try {
-        await loadMsg91OtpSdkOnce();
-      } catch (e) {
-        setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`);
-        return;
-      }
+      try { await loadMsg91OtpSdkOnce(); }
+      catch (e) { setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`); return; }
 
-      try {
-        window.verifyOtp(
-          otp,
-          async (data) => {
-            const token = extractAccessToken(data);
-            if (!token) {
-              setMsg(`<span class="otpBad">OTP verified, but access token not found.</span>`);
-              return;
+      window.verifyOtp(
+        otp,
+        async (data) => {
+          const token = extractAccessToken(data);
+          if (!token) { setMsg(`<span class="otpBad">OTP verified, but access token not found.</span>`); return; }
+          VERIFIED_ACCESS_TOKEN = token;
+
+          try {
+            const v = await jsonp(GAS_URL, { action:"verifyAccessToken", mobile, access_token: token });
+            if (v && v.ok) {
+              VERIFIED_MOBILE = mobile;
+              survey.setValue("mobile_number", mobile);
+              survey.setValue("otpVerified", true);
+              alert("Mobile verified. You can now sign the consent.");
+              survey.render();
+            } else {
+              setMsg(`<span class="otpBad">Server verification failed.</span>`);
+              alert("Server verification failed. Please retry OTP.");
             }
-
-            // ✅ keep token for submit
-            VERIFIED_ACCESS_TOKEN = token;
-            try { localStorage.setItem("MSG91_ACCESS_TOKEN", token); } catch {}
-
-            // Server-side verify
-            try {
-              const v = await jsonp(GAS_URL, {
-                action: "verifyAccessToken",
-                mobile: mobile,
-                access_token: token
-              });
-
-              if (v && v.ok) {
-                // ✅ keep mobile in BOTH: SurveyJS + safe variable
-                VERIFIED_MOBILE = mobile;
-                survey.setValue("mobile_number", mobile);
-
-                survey.setValue("otpVerified", true);
-                alert("Mobile verified. You can now sign the consent.");
-                survey.render();
-              } else {
-                setMsg(`<span class="otpBad">Server verification failed.</span>`);
-                alert("Server verification failed. Please retry OTP.");
-              }
-            } catch (e) {
-              setMsg(`<span class="otpBad">Server verification failed (JSONP).</span>`);
-              alert("Server verification failed (JSONP). Please retry.");
-            }
-          },
-          () => {
-            setMsg(`<span class="otpBad">OTP verify failed.</span>`);
-            alert("OTP verify failed. Please try again.");
-          },
-          otpReqId || undefined
-        );
-      } catch (e) {
-        setMsg(`<span class="otpBad">OTP verify failed.</span>`);
-      }
+          } catch (e) {
+            setMsg(`<span class="otpBad">Server verification failed (JSONP).</span>`);
+            alert("Server verification failed (JSONP). Please retry.");
+          }
+        },
+        () => {
+          setMsg(`<span class="otpBad">OTP verify failed.</span>`);
+          alert("OTP verify failed. Please try again.");
+        },
+        otpReqId || undefined
+      );
     });
   }
 
@@ -658,7 +611,6 @@
     }
   });
 
-  // Block leaving Consent page until verified
   survey.onCurrentPageChanging.add((s, opt) => {
     const oldp = opt.oldCurrentPage;
     const newp = opt.newCurrentPage;
@@ -669,7 +621,6 @@
     }
   });
 
-  // Block completing unless verified
   survey.onCompleting.add((s, opt) => {
     if (!s.getValue("otpVerified")) {
       opt.allowComplete = false;
@@ -677,10 +628,11 @@
     }
   });
 
-  // Submit to Google Sheets
-  survey.onComplete.add(async ({ data }) => {
+  // ✅ FIXED: SurveyJS onComplete signature
+  survey.onComplete.add(async (sender) => {
     try {
-      const mobile = String(VERIFIED_MOBILE || survey.getValue("mobile_number") || "").trim();
+      const data = sender.data || {};
+      const mobile = String(VERIFIED_MOBILE || sender.getValue("mobile_number") || "").trim();
       const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
 
       const payload = {
@@ -693,6 +645,8 @@
         }
       };
 
+      console.log("Submitting to GAS:", SHEETS_WEB_APP_URL, payload);
+
       await fetch(SHEETS_WEB_APP_URL, {
         method: "POST",
         mode: "no-cors",
@@ -703,6 +657,7 @@
       alert("Thanks! Your response has been recorded.");
     } catch (err) {
       console.error(err);
+      showErr("Submit error: " + (err && (err.stack || err.message) || err));
       alert("Submitted, but we couldn't confirm the save.");
     }
   });
