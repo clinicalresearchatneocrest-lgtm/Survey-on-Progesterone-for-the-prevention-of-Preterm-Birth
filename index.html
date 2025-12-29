@@ -67,7 +67,6 @@
     .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:8px; cursor:pointer; }
     .otpOk { color:#0a7a0a; font-weight:700; }
     .otpBad { color:#b00020; font-weight:700; }
-    .otpSmall { font-size:12px; color:#444; white-space:pre-wrap; }
   </style>
 </head>
 
@@ -85,61 +84,85 @@
 </div>
 
 <script>
-  // ====== CONFIG ======
+  // ========= CONFIG =========
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4fSobkCeAOcgHb3iRqG-1k5ZYeRn-n2ocAdLE4u4ZZ1FixDbtdEY1ancG8sY87GUMIw/exec";
-  const SHEETS_WEB_APP_URL = GAS_URL; // same endpoint for POST survey submit
 
-  // ====== ERROR BOX ======
+  const MSG91_WIDGET_ID = "356c43664a57383136363831";
+  const MSG91_TOKEN_AUTH = "484544T7lf8amk695279ebP1";
+
+  // ========= ERROR BOX =========
   const showErr = (msg) => {
     const box = document.getElementById("errbox");
     box.style.display = "block";
     box.textContent = msg;
     console.error(msg);
   };
-  window.addEventListener("error", e => showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : "")));
-  window.addEventListener("unhandledrejection", e => showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason)));
+  window.addEventListener("error", e => {
+    showErr("Error: " + e.message + "\n" + (e.error && e.error.stack ? e.error.stack : ""));
+  });
+  window.addEventListener("unhandledrejection", e => {
+    showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+  });
 
-  // ====== JSONP helper (for OTP on GitHub Pages) ======
-  function jsonp(url) {
+  // ========= LOAD MSG91 OTP PROVIDER (Widget) =========
+  let msg91Ready = false;
+
+  function loadMsg91OtpProvider() {
     return new Promise((resolve, reject) => {
-      const cb = "cb_" + Math.random().toString(36).slice(2);
-      const s = document.createElement("script");
-      const sep = url.includes("?") ? "&" : "?";
-      const fullUrl = url + sep + "callback=" + cb + "&_ts=" + Date.now();
+      const urls = [
+        "https://verify.msg91.com/otp-provider.js",
+        "https://verify.phone91.com/otp-provider.js"
+      ];
+      let i = 0;
 
-      let done = false;
-      const t = setTimeout(() => {
-        if (done) return;
-        done = true;
-        try { delete window[cb]; } catch {}
-        s.remove();
-        reject(new Error("JSONP timeout. Check Apps Script deploy access = Anyone, and URL is /exec."));
-      }, 15000);
+      function attempt() {
+        const s = document.createElement("script");
+        s.src = urls[i];
+        s.async = true;
 
-      window[cb] = (data) => {
-        if (done) return;
-        done = true;
-        clearTimeout(t);
-        try { delete window[cb]; } catch {}
-        s.remove();
-        resolve(data);
-      };
+        s.onload = () => {
+          try {
+            if (typeof window.initSendOTP !== "function") {
+              reject(new Error("MSG91 initSendOTP not available after loading script."));
+              return;
+            }
 
-      s.onerror = () => {
-        if (done) return;
-        done = true;
-        clearTimeout(t);
-        try { delete window[cb]; } catch {}
-        s.remove();
-        reject(new Error("JSONP load failed. Apps Script did not return callback(). Check /exec, deploy 'Anyone'."));
-      };
+            const configuration = {
+              widgetId: MSG91_WIDGET_ID,
+              tokenAuth: MSG91_TOKEN_AUTH,
+              exposeMethods: true,   // IMPORTANT: exposes window.sendOtp / window.verifyOtp
+              success: (data) => console.log("MSG91 success(config):", data),
+              failure: (err) => console.log("MSG91 failure(config):", err)
+            };
 
-      s.src = fullUrl;
-      document.head.appendChild(s);
+            window.initSendOTP(configuration);
+            msg91Ready = true;
+            resolve(true);
+          } catch (e) {
+            reject(e);
+          }
+        };
+
+        s.onerror = () => {
+          i++;
+          if (i < urls.length) attempt();
+          else reject(new Error("Failed to load MSG91 otp-provider script."));
+        };
+
+        document.head.appendChild(s);
+      }
+
+      attempt();
     });
   }
 
-  // === YOUR SURVEY JSON (ALL QUESTIONS KEPT) ===
+  async function ensureMsg91Ready() {
+    if (msg91Ready) return true;
+    await loadMsg91OtpProvider();
+    return true;
+  }
+
+  // ========= SURVEY JSON (UNCHANGED QUESTIONS) =========
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -152,6 +175,7 @@
           { "type": "html", "name": "otp_block", "html": "<div id='otpMount'></div>" },
           { "type": "boolean", "name": "otpVerified", "defaultValue": false, "visible": false },
           { "type": "text", "name": "mobile_number", "visible": false },
+          { "type": "text", "name": "otp_access_token", "visible": false },
 
           {
             "type": "checkbox",
@@ -423,25 +447,19 @@
     "headerView": "advanced"
   };
 
-  // ====== INIT SURVEY ======
-  if (!window.Survey || !Survey.Model) {
-    showErr("SurveyJS did not load. Check unpkg links.");
-  }
-
   const survey = new Survey.Model(surveyJson);
 
-  // Move title/description into custom header
+  // Custom header
   document.getElementById("customTitle").textContent = survey.title || "";
   document.getElementById("customDesc").textContent  = survey.description || "";
   survey.title = "";
   survey.description = "";
 
-  // ===== OTP UI RENDERING =====
+  // OTP UI render
   function renderOtpUI(mountEl) {
     if (!mountEl) return;
 
-    const alreadyVerified = !!survey.getValue("otpVerified");
-    if (alreadyVerified) {
+    if (survey.getValue("otpVerified") === true) {
       mountEl.innerHTML = `
         <div class="otpBox">
           <div class="otpOk">✅ Mobile verified.</div>
@@ -465,76 +483,111 @@
           <button id="otp_verify" type="button">Verify OTP</button>
         </div>
 
-        <div id="otp_msg" class="otpHint otpSmall"></div>
+        <div id="otp_msg" class="otpHint"></div>
       </div>
     `;
+  }
 
-    const msgEl = mountEl.querySelector("#otp_msg");
-    const setMsg = (txt) => { if (msgEl) msgEl.textContent = txt; };
+  function setOtpMsg(html) {
+    const m = document.getElementById("otp_msg");
+    if (m) m.innerHTML = html;
+  }
 
-    const sendBtn = mountEl.querySelector("#otp_send");
-    const verifyBtn = mountEl.querySelector("#otp_verify");
+  let otpBound = false;
 
-    sendBtn.addEventListener("click", async () => {
-      const mobile = (mountEl.querySelector("#otp_mobile").value || "").trim();
-      if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+  function bindOtpHandlersOnce() {
+    if (otpBound) return;
+    otpBound = true;
 
-      survey.setValue("mobile_number", mobile);
+    document.addEventListener("click", async (ev) => {
+      const id = ev.target && ev.target.id;
 
-      try {
-        const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
-        console.log("sendOtp:", r);
+      if (id === "otp_send") {
+        const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
+        if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
 
-        if (r && r.ok) {
-          mountEl.querySelector("#otp_row2").style.display = "flex";
-          setMsg(`OTP sent to ${mobile}.`);
-          alert("OTP sent");
-        } else {
-          setMsg(`OTP send failed.\nHTTP: ${r?.msg91_http || ""}\n${r?.msg91_body || r?.error || "No details"}`);
-          alert("OTP send failed");
+        survey.setValue("mobile_number", mobile);
+
+        try {
+          await ensureMsg91Ready();
+
+          if (typeof window.sendOtp !== "function") {
+            setOtpMsg("<span class='otpBad'>MSG91 methods not available. Check widget/token.</span>");
+            return;
+          }
+
+          const identifier = "91" + mobile; // India
+          window.sendOtp(
+            identifier,
+            () => {
+              document.getElementById("otp_row2").style.display = "flex";
+              setOtpMsg(`✅ OTP sent to <b>${mobile}</b>.`);
+              alert("OTP sent");
+            },
+            (error) => {
+              console.log("sendOtp error:", error);
+              setOtpMsg(`<span class='otpBad'>OTP send failed.</span><br><small>${(error && (error.message || JSON.stringify(error))) || "No details"}</small>`);
+              alert("OTP send failed");
+            }
+          );
+        } catch (e) {
+          showErr("MSG91 load/send failed:\n" + (e && e.stack ? e.stack : e));
+          alert("OTP system error. Please check widget tokenAuth and widget settings.");
         }
-      } catch (e) {
-        setMsg(String(e && e.message ? e.message : e));
-        alert("OTP send failed (network/deploy issue)");
       }
-    });
 
-    verifyBtn.addEventListener("click", async () => {
-      const mobile = (mountEl.querySelector("#otp_mobile").value || "").trim();
-      const otp = (mountEl.querySelector("#otp_code").value || "").trim();
-      if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
-      if (!/^\d{4,8}$/.test(otp)) return alert("Enter valid OTP");
+      if (id === "otp_verify") {
+        const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
+        const otp = (document.getElementById("otp_code")?.value || "").trim();
 
-      survey.setValue("mobile_number", mobile);
+        if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+        if (!/^\d{4,8}$/.test(otp)) return alert("Enter valid OTP");
 
-      try {
-        const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`);
-        console.log("verifyOtp:", r);
+        survey.setValue("mobile_number", mobile);
 
-        if (r && r.ok) {
-          survey.setValue("otpVerified", true);
-          survey.render(); // re-render so enableIf takes effect
-          alert("Mobile verified. You can now sign the consent.");
-        } else {
-          setMsg(`OTP verify failed.\nHTTP: ${r?.msg91_http || ""}\n${r?.msg91_body || r?.error || "No details"}`);
-          alert("OTP verify failed");
+        try {
+          await ensureMsg91Ready();
+
+          if (typeof window.verifyOtp !== "function") {
+            setOtpMsg("<span class='otpBad'>MSG91 verify method not available. Check widget/token.</span>");
+            return;
+          }
+
+          window.verifyOtp(
+            otp,
+            (data) => {
+              const token = (data && (data.access_token || data.accessToken || data.token)) ? (data.access_token || data.accessToken || data.token) : "";
+              survey.setValue("otp_access_token", token);
+              survey.setValue("otpVerified", true);
+
+              // Re-render survey so enableIf fields unlock
+              survey.render(document.getElementById("surveyContainer"));
+              alert("Mobile verified. You can now sign the consent.");
+            },
+            (error) => {
+              console.log("verifyOtp error:", error);
+              setOtpMsg(`<span class='otpBad'>OTP verify failed.</span><br><small>${(error && (error.message || JSON.stringify(error))) || "No details"}</small>`);
+              alert("OTP verify failed");
+            }
+          );
+        } catch (e) {
+          showErr("verifyOtp failed:\n" + (e && e.stack ? e.stack : e));
+          alert("OTP verification system error. Check widget settings.");
         }
-      } catch (e) {
-        setMsg(String(e && e.message ? e.message : e));
-        alert("OTP verify failed (network/deploy issue)");
       }
     });
   }
 
-  // mount OTP block into Consent page
+  // Attach OTP block after render
   survey.onAfterRenderQuestion.add((s, opt) => {
     if (opt.question && opt.question.name === "otp_block") {
       const mount = opt.htmlElement.querySelector("#otpMount");
       renderOtpUI(mount);
+      bindOtpHandlersOnce();
     }
   });
 
-  // Block moving away from Consent page until verified
+  // Block leaving consent page
   survey.onCurrentPageChanging.add((s, opt) => {
     const oldp = opt.oldCurrentPage;
     const newp = opt.newCurrentPage;
@@ -546,7 +599,7 @@
     }
   });
 
-  // Block completing unless verified
+  // Block complete
   survey.onCompleting.add((s, opt) => {
     if (!s.getValue("otpVerified")) {
       opt.allowComplete = false;
@@ -554,19 +607,13 @@
     }
   });
 
-  // Submit to Google Sheets (POST)
+  // Submit
   survey.onComplete.add(async ({ data }) => {
     try {
-      const mobile = String(survey.getValue("mobile_number") || "").trim();
       const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
+      const payload = { ...data, _meta: { ...meta, submittedAt: new Date().toISOString() } };
 
-      const payload = {
-        ...data,
-        _meta: { ...meta, submittedAt: new Date().toISOString(), mobile }
-      };
-
-      // NOTE: no-cors is fine for "fire-and-forget"
-      await fetch(SHEETS_WEB_APP_URL, {
+      await fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -580,7 +627,9 @@
     }
   });
 
+  // Render survey now
   survey.render(document.getElementById("surveyContainer"));
 </script>
+
 </body>
 </html>
