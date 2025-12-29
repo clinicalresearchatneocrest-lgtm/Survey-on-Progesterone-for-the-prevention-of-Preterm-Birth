@@ -48,25 +48,24 @@
     }
 
     #surveyContainer .sd-header,
-    #surveyContainer .sv-header {
-      display: none !important;
-    }
+    #surveyContainer .sv-header { display:none !important; }
 
-    /* OTP UI */
+    /* OTP box */
     .otpBox {
       border: 1px solid #ccc;
       padding: 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       margin: 10px 0 18px 0;
       background: #fff;
     }
     .otpTitle { font-weight: 700; margin-bottom: 6px; }
     .otpHint { margin: 6px 0 0 0; font-size: 12px; color: #444; }
     .otpRow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 10px; }
-    .otpRow input { padding:10px; border:1px solid #ccc; border-radius:8px; min-width:240px; }
-    .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:8px; cursor:pointer; }
+    .otpRow input { padding:10px; border:1px solid #ccc; border-radius:10px; min-width:240px; }
+    .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:10px; cursor:pointer; }
     .otpOk { color:#0a7a0a; font-weight:700; }
     .otpBad { color:#b00020; font-weight:700; }
+    .otpSmall { font-size:12px; color:#444; margin-top:6px; }
   </style>
 </head>
 
@@ -84,11 +83,11 @@
 </div>
 
 <script>
-  // ====== CONFIG ======
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyE9wXGxOWhAQGro-ewJjUMwv3ACzgvfKACtkpAbfYjJMQ2QNtnEo6Cj7pU9tgChRFJlw/exec";
+  /* ================= CONFIG ================= */
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4fSobkCeAOcgHb3iRqG-1k5ZYeRn-n2ocAdLE4u4ZZ1FixDbtdEY1ancG8sY87GUMIw/exec";
   const SHEETS_WEB_APP_URL = GAS_URL;
 
-  // ====== ERROR BOX ======
+  /* ================= ERROR BOX ================= */
   const showErr = (msg) => {
     const box = document.getElementById("errbox");
     box.style.display = "block";
@@ -102,10 +101,10 @@
     showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
   });
 
-  // ====== JSONP helper ======
+  /* ================= JSONP helper (for GitHub Pages → Apps Script) ================= */
   function jsonp(url) {
     return new Promise((resolve, reject) => {
-      const cb = "cb_" + Math.random().toString(36).slice(2);
+      const cb = "CB_" + Math.random().toString(36).slice(2);
       const s = document.createElement("script");
       const sep = url.includes("?") ? "&" : "?";
       const fullUrl = url + sep + "callback=" + cb + "&_ts=" + Date.now();
@@ -116,7 +115,7 @@
         done = true;
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error("JSONP load failed. Apps Script did not return callback(...)."));
+        reject(new Error("JSONP timeout. Check: WebApp access=Anyone, URL ends with /exec, and deployment is latest."));
       }, 15000);
 
       window[cb] = (data) => {
@@ -134,7 +133,7 @@
         clearTimeout(t);
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error("JSONP network error. Check Apps Script deployment access = Anyone and /exec URL."));
+        reject(new Error("JSONP load failed. Apps Script did not return callback(...). Check /exec and 'Anyone' access."));
       };
 
       s.src = fullUrl;
@@ -142,16 +141,7 @@
     });
   }
 
-  if (!window.Survey || !Survey.Model) {
-    showErr(
-      "SurveyJS library did not load.\n" +
-      "Check these return 200:\n" +
-      "- https://unpkg.com/survey-core/survey.core.min.js\n" +
-      "- https://unpkg.com/survey-js-ui/survey-js-ui.min.js"
-    );
-  }
-
-  // ====== YOUR SURVEY JSON (UNCHANGED QUESTIONS) ======
+  /* ================= SURVEY JSON (ALL QUESTIONS KEPT) ================= */
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -163,7 +153,8 @@
         "elements": [
           { "type": "html", "name": "otp_block", "html": "<div id='otpMount'></div>" },
           { "type": "boolean", "name": "otpVerified", "defaultValue": false, "visible": false },
-          { "type": "text", "name": "mobile_number", "visible": false },
+          { "type": "text", "name": "otpMobile", "visible": false },
+          { "type": "text", "name": "otpReqId", "visible": false },
 
           {
             "type": "checkbox",
@@ -184,10 +175,6 @@
           { "type": "text", "name": "question4", "title": "Date", "isRequired": true, "inputType": "date", "enableIf": "{otpVerified} = true" }
         ]
       },
-
-      /* ===========================
-         PAGE 2 + PAGE 3 = SAME AS YOUR ORIGINAL (UNCHANGED)
-         =========================== */
 
       {
         "name": "page2",
@@ -441,22 +428,22 @@
     "headerView": "advanced"
   };
 
+  if (!window.Survey || !Survey.Model) {
+    showErr("SurveyJS library did not load. Check unpkg links return 200.");
+  }
+
   const survey = new Survey.Model(surveyJson);
 
-  // Move title/description into custom header
   document.getElementById("customTitle").textContent = survey.title || "";
   document.getElementById("customDesc").textContent  = survey.description || "";
   survey.title = "";
   survey.description = "";
 
-  // ===== OTP UI mount into Consent page =====
-  let otpHandlersBound = false;
-
-  function renderOtpUI(mountEl) {
+  /* ================= OTP UI inside consent page ================= */
+  function renderOtp(mountEl) {
     if (!mountEl) return;
 
-    const alreadyVerified = !!survey.getValue("otpVerified");
-    if (alreadyVerified) {
+    if (survey.getValue("otpVerified") === true) {
       mountEl.innerHTML = `
         <div class="otpBox">
           <div class="otpOk">✅ Mobile verified.</div>
@@ -480,97 +467,91 @@
           <button id="otp_verify" type="button">Verify OTP</button>
         </div>
 
-        <div id="otp_msg" class="otpHint"></div>
+        <div id="otp_msg" class="otpSmall"></div>
       </div>
     `;
 
-    if (otpHandlersBound) return;
-    otpHandlersBound = true;
+    const msg = (html) => { const el = document.getElementById("otp_msg"); if (el) el.innerHTML = html; };
 
-    const setMsg = (html) => {
-      const m = document.getElementById("otp_msg");
-      if (m) m.innerHTML = html;
+    document.getElementById("otp_send").onclick = async () => {
+      const mobile = (document.getElementById("otp_mobile").value || "").trim();
+      if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+
+      survey.setValue("otpMobile", mobile);
+      msg("Sending OTP...");
+
+      try {
+        const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
+        console.log("sendOtp:", r);
+
+        if (r && r.ok && r.reqId) {
+          survey.setValue("otpReqId", r.reqId);
+          document.getElementById("otp_row2").style.display = "flex";
+          msg(`<span class="otpOk">✅ OTP sent.</span> Request ID saved.`);
+          alert("OTP sent");
+        } else {
+          msg(`<span class="otpBad">OTP send failed.</span><br>
+               <small>HTTP: ${r?.msg91_http ?? ""}</small><br>
+               <small>${(r?.msg91_body || r?.error || "No details")}</small>`);
+          alert("OTP send failed (see details under OTP box).");
+        }
+      } catch (e) {
+        msg(`<span class="otpBad">${String(e.message || e)}</span>`);
+        alert("OTP send failed.");
+      }
     };
 
-    document.addEventListener("click", async (ev) => {
-      const id = ev.target && ev.target.id;
+    document.getElementById("otp_verify").onclick = async () => {
+      const mobile = (document.getElementById("otp_mobile").value || "").trim();
+      const otp = (document.getElementById("otp_code").value || "").trim();
+      const reqId = String(survey.getValue("otpReqId") || "").trim();
 
-      if (id === "otp_send") {
-        const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
-        if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+      if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
+      if (!otp) return alert("Enter OTP");
+      if (!reqId) return alert("Missing request id. Please resend OTP.");
 
-        survey.setValue("mobile_number", mobile);
+      msg("Verifying OTP...");
 
-        try {
-          const r = await jsonp(`${GAS_URL}?action=sendOtp&mobile=${encodeURIComponent(mobile)}`);
-          console.log("sendOtp response:", r);
+      try {
+        const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}&reqId=${encodeURIComponent(reqId)}`);
+        console.log("verifyOtp:", r);
 
-          if (r && r.ok) {
-            document.getElementById("otp_row2").style.display = "flex";
-            setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
-            alert("OTP sent");
-          } else {
-            setMsg(`<span class="otpBad">OTP send failed.</span><br>
-                    <small>MSG91 HTTP: ${r?.msg91_http || ""}</small><br>
-                    <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
-            alert("OTP send failed — see message below.");
-          }
-        } catch (e) {
-          setMsg(`<span class="otpBad">OTP send failed.</span><br><small>${e.message}</small>`);
-          alert("OTP send failed.");
+        if (r && r.ok) {
+          survey.setValue("otpVerified", true);
+          msg(`<span class="otpOk">✅ Verified.</span> You may now sign the consent.`);
+          survey.render(); // re-render enables fields immediately
+          alert("Mobile verified. You can now sign the consent.");
+        } else {
+          msg(`<span class="otpBad">OTP verify failed.</span><br>
+               <small>HTTP: ${r?.msg91_http ?? ""}</small><br>
+               <small>${(r?.msg91_body || r?.error || "No details")}</small>`);
+          alert("OTP verify failed (see details).");
         }
+      } catch (e) {
+        msg(`<span class="otpBad">${String(e.message || e)}</span>`);
+        alert("OTP verify failed.");
       }
-
-      if (id === "otp_verify") {
-        const mobile = (document.getElementById("otp_mobile")?.value || "").trim();
-        const otp = (document.getElementById("otp_code")?.value || "").trim();
-        if (!/^[6-9]\d{9}$/.test(mobile)) return alert("Enter valid mobile number");
-        if (!otp) return alert("Enter OTP");
-
-        survey.setValue("mobile_number", mobile);
-
-        try {
-          const r = await jsonp(`${GAS_URL}?action=verifyOtp&mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}`);
-          console.log("verifyOtp response:", r);
-
-          if (r && r.ok) {
-            survey.setValue("otpVerified", true);
-            survey.render();
-            alert("Mobile verified. You can now sign the consent.");
-          } else {
-            setMsg(`<span class="otpBad">OTP verify failed.</span><br>
-                    <small>MSG91 HTTP: ${r?.msg91_http || ""}</small><br>
-                    <small>${(r?.msg91_body || r?.error || "No details returned")}</small>`);
-            alert("OTP verify failed — see message below.");
-          }
-        } catch (e) {
-          setMsg(`<span class="otpBad">OTP verify failed.</span><br><small>${e.message}</small>`);
-          alert("OTP verify failed.");
-        }
-      }
-    });
+    };
   }
 
   survey.onAfterRenderQuestion.add((s, opt) => {
     if (opt.question && opt.question.name === "otp_block") {
       const mount = opt.htmlElement.querySelector("#otpMount");
-      renderOtpUI(mount);
+      renderOtp(mount);
     }
   });
 
   // Block leaving consent page until verified
   survey.onCurrentPageChanging.add((s, opt) => {
-    const oldp = opt.oldCurrentPage;
-    const newp = opt.newCurrentPage;
-    if (!oldp || !newp) return;
-
-    if (oldp.name === "page1" && newp.name !== "page1" && !s.getValue("otpVerified")) {
-      opt.allowChanging = false;
-      alert("Please verify your mobile number first.");
+    if (opt.oldCurrentPage?.name === "page1" && opt.newCurrentPage?.name !== "page1") {
+      if (!s.getValue("otpVerified")) {
+        opt.allowChanging = false;
+        alert("Please verify your mobile number first.");
+      }
     }
   });
 
-  // Block completing unless verified
+  // Block completion until verified
   survey.onCompleting.add((s, opt) => {
     if (!s.getValue("otpVerified")) {
       opt.allowComplete = false;
@@ -578,15 +559,21 @@
     }
   });
 
-  // Submit to Sheets (POST). Server blocks if OTP not verified.
+  // Submit to Google Sheets
   survey.onComplete.add(async ({ data }) => {
     try {
-      const mobile = String(survey.getValue("mobile_number") || "").trim();
-      const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
+      const mobile = String(survey.getValue("otpMobile") || "").trim();
+      const reqId  = String(survey.getValue("otpReqId") || "").trim();
 
+      const metaQS = Object.fromEntries(new URLSearchParams(location.search).entries());
       const payload = {
         ...data,
-        _meta: { ...meta, submittedAt: new Date().toISOString(), mobile }
+        _meta: {
+          ...metaQS,
+          submittedAt: new Date().toISOString(),
+          mobile,
+          reqId
+        }
       };
 
       await fetch(SHEETS_WEB_APP_URL, {
@@ -598,6 +585,7 @@
 
       alert("Thanks! Your response has been recorded.");
     } catch (err) {
+      console.error(err);
       alert("Submitted, but we couldn't confirm the save.");
     }
   });
@@ -606,4 +594,3 @@
 </script>
 </body>
 </html>
-
