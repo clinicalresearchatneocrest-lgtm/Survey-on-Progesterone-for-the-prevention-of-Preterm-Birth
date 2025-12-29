@@ -10,55 +10,66 @@
   <script src="https://unpkg.com/survey-core/survey.core.min.js"></script>
   <script src="https://unpkg.com/survey-js-ui/survey-js-ui.min.js"></script>
 
-  <!-- Font -->
+  <!-- Free look-alike for Century Gothic -->
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
 
   <style>
     body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #pageWrap { max-width: 960px; margin: 0 auto; }
 
-    #errbox{
+    #errbox {
       background:#fff3cd; color:#664d03; border:1px solid #ffecb5;
       padding:12px; border-radius:8px; margin:12px 0; display:none;
       white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
+    /* Custom header */
     .custom-header { margin-bottom: 16px; }
-    .custom-title{
+    .custom-title {
       font-family: "Questrial", Arial, sans-serif;
-      font-size:14px; font-weight:600; line-height:1.35; letter-spacing:0.2px;
-      margin:0 0 6px 0;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: 0.2px;
+      margin: 0 0 6px 0;
     }
-    .custom-description{
+    .custom-description {
       font-family: "Questrial", Arial, sans-serif;
-      font-size:12px; font-weight:400; line-height:1.5; color:#333;
-      white-space:pre-wrap;
-      margin:0;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #333;
+      white-space: pre-wrap;
+      margin: 0;
     }
 
+    /* Keep Questrial across the survey body too */
     .sd-root-modern, .sv-root {
       --sjs-font-family: "Questrial", Arial, sans-serif;
       font-family: var(--sjs-font-family);
     }
+
+    /* Hide SurveyJS own header (avoid double header) */
     #surveyContainer .sd-header,
-    #surveyContainer .sv-header { display:none !important; }
+    #surveyContainer .sv-header {
+      display: none !important;
+    }
 
     /* OTP UI */
     .otpBox {
       border: 1px solid #ccc;
       padding: 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       margin: 10px 0 18px 0;
       background: #fff;
     }
     .otpTitle { font-weight: 700; margin-bottom: 6px; }
     .otpHint { margin: 6px 0 0 0; font-size: 12px; color: #444; }
     .otpRow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 10px; }
-    .otpRow input { padding:10px; border:1px solid #ccc; border-radius:8px; min-width:240px; }
-    .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:8px; cursor:pointer; }
+    .otpRow input { padding:10px; border:1px solid #ccc; border-radius:10px; min-width:240px; }
+    .otpRow button { padding:10px 14px; border:1px solid #333; background:#fff; border-radius:10px; cursor:pointer; }
     .otpOk { color:#0a7a0a; font-weight:700; }
     .otpBad { color:#b00020; font-weight:700; }
-    .otpSmall { font-size:12px; color:#555; margin-top:8px; word-break:break-word; }
   </style>
 </head>
 
@@ -67,23 +78,24 @@
   <noscript>Enable JavaScript to view this survey.</noscript>
   <div id="errbox"></div>
 
+  <!-- SURVEY -->
   <div class="custom-header">
     <h3 id="customTitle" class="custom-title"></h3>
     <p id="customDesc" class="custom-description"></p>
   </div>
-
   <div id="surveyContainer"></div>
 </div>
 
 <script>
   /* ===================== CONFIG ===================== */
+  // Your Apps Script Web App /exec URL:
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4fSobkCeAOcgHb3iRqG-1k5ZYeRn-n2ocAdLE4u4ZZ1FixDbtdEY1ancG8sY87GUMIw/exec";
   const SHEETS_WEB_APP_URL = GAS_URL;
 
-  // MSG91 WIDGET creds (your latest)
-  const MSG91_WIDGET_ID = "356c43664a57383136363831";
-  const MSG91_TOKEN_AUTH = "484544T7lf8amk695279ebP1";
-  const COUNTRY_CODE = "91";
+  // MSG91 Widget details
+  const MSG91_WIDGET_ID  = "356c43664a57383136363831";
+  const MSG91_TOKEN_AUTH = "484544T7lf8amk695279ebP1";  // tokenAuth (NOT the authkey)
+  const COUNTRY_CODE     = "91"; // India
 
   /* ===================== ERROR BOX ===================== */
   const showErr = (msg) => {
@@ -99,13 +111,16 @@
     showErr("Promise error: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
   });
 
-  /* ===================== JSONP helper (GitHub Pages => Apps Script) ===================== */
-  function jsonp(url, params = {}) {
+  /* ===================== JSONP helper (for GAS doGet) ===================== */
+  function jsonpCall(baseUrl, params) {
     return new Promise((resolve, reject) => {
-      const cb = "cb_" + Math.random().toString(36).slice(2);
+      const cb = "CB_" + Math.random().toString(36).slice(2);
       const s = document.createElement("script");
-      const q = new URLSearchParams({ ...params, callback: cb, _ts: String(Date.now()) });
-      s.src = url + (url.includes("?") ? "&" : "?") + q.toString();
+
+      const qp = new URLSearchParams(params || {});
+      qp.set("callback", cb);
+      qp.set("_ts", String(Date.now())); // cache-buster
+      s.src = baseUrl + (baseUrl.includes("?") ? "&" : "?") + qp.toString();
 
       let done = false;
       const t = setTimeout(() => {
@@ -113,7 +128,7 @@
         done = true;
         try { delete window[cb]; } catch {}
         s.remove();
-        reject(new Error("JSONP timeout (Apps Script did not respond)."));
+        reject(new Error("JSONP load failed. Apps Script did not return callback(...)."));
       }, 15000);
 
       window[cb] = (data) => {
@@ -139,72 +154,75 @@
   }
 
   /* ===================== MSG91 OTP widget loader ===================== */
-  let _otpSdkReady = false;
+  let _msg91Loaded = false;
+  async function loadMsg91OtpScript() {
+    if (_msg91Loaded && typeof window.initSendOTP === "function") return;
 
-  function loadMsg91OtpSdkOnce() {
-    if (_otpSdkReady) return Promise.resolve();
+    const urls = [
+      "https://verify.msg91.com/otp-provider.js",
+      "https://verify.phone91.com/otp-provider.js"
+    ];
 
-    return new Promise((resolve, reject) => {
-      const urls = [
-        "https://verify.msg91.com/otp-provider.js",
-        "https://verify.phone91.com/otp-provider.js"
-      ];
+    await new Promise((resolve, reject) => {
       let i = 0;
 
-      const configuration = {
-        widgetId: MSG91_WIDGET_ID,
-        tokenAuth: MSG91_TOKEN_AUTH,
-        exposeMethods: true,
-        success: (data) => console.log("MSG91 widget success:", data),
-        failure: (error) => console.log("MSG91 widget failure:", error),
-      };
-
-      (function attempt() {
+      function attempt() {
         const s = document.createElement("script");
         s.src = urls[i];
         s.async = true;
+
         s.onload = () => {
-          try {
-            if (typeof window.initSendOTP === "function") {
+          if (typeof window.initSendOTP === "function") {
+            try {
+              const configuration = {
+                widgetId: MSG91_WIDGET_ID,
+                tokenAuth: MSG91_TOKEN_AUTH,
+                exposeMethods: true,
+                success: () => {},
+                failure: () => {}
+              };
               window.initSendOTP(configuration);
-            }
-          } catch {}
-          setTimeout(() => {
-            // exposeMethods:true should expose sendOtp/verifyOtp
-            if (typeof window.sendOtp === "function" && typeof window.verifyOtp === "function") {
-              _otpSdkReady = true;
+              _msg91Loaded = true;
               resolve();
-            } else {
-              i++;
-              if (i < urls.length) attempt();
-              else reject(new Error("MSG91 methods not available. Check widgetId/tokenAuth."));
+            } catch (e) {
+              reject(e);
             }
-          }, 400);
+          } else {
+            // loaded but initSendOTP missing → try next
+            i++;
+            if (i < urls.length) attempt();
+            else reject(new Error("MSG91 initSendOTP not available."));
+          }
         };
+
         s.onerror = () => {
           i++;
           if (i < urls.length) attempt();
-          else reject(new Error("Could not load MSG91 otp-provider.js"));
+          else reject(new Error("MSG91 OTP script failed to load."));
         };
+
         document.head.appendChild(s);
-      })();
+      }
+
+      attempt();
     });
+
+    // Ensure methods exist
+    if (typeof window.sendOtp !== "function" || typeof window.verifyOtp !== "function") {
+      throw new Error("MSG91 methods not available. Check widget/tokenAuth.");
+    }
   }
 
-  // ✅ IMPORTANT: your verifyOtp response contains JWT in `message`
-  function extractAccessToken(obj) {
-    if (!obj) return "";
-    return String(
-      obj.message ||
-      obj["access-token"] ||
-      obj.access_token ||
-      obj.accessToken ||
-      (obj.data && (obj.data.message || obj.data["access-token"] || obj.data.accessToken)) ||
-      ""
-    ).trim();
+  function extractJwtToken(resp) {
+    // Your working responses show token in resp.message
+    if (!resp) return "";
+    if (typeof resp.message === "string" && resp.message.trim()) return resp.message.trim();
+    if (typeof resp.access_token === "string" && resp.access_token.trim()) return resp.access_token.trim();
+    if (typeof resp.token === "string" && resp.token.trim()) return resp.token.trim();
+    return "";
   }
 
-  /* ===================== YOUR FULL SURVEY JSON (unchanged questions) ===================== */
+  /* ===================== SURVEY JSON (all your questions kept) ===================== */
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
@@ -507,25 +525,20 @@
   survey.title = "";
   survey.description = "";
 
-  /* ===================== OTP UI (inside Consent page) ===================== */
-  let otpReqId = "";
-
+  /* ===================== OTP UI (on Consent page) ===================== */
   function renderOtpUI(mountEl) {
     if (!mountEl) return;
 
+    // Auto-hide OTP if already verified
     if (survey.getValue("otpVerified") === true) {
-      mountEl.innerHTML = `
-        <div class="otpBox">
-          <div class="otpOk">✅ Mobile verified.</div>
-          <div class="otpHint">Consent and signature fields are enabled.</div>
-        </div>`;
+      mountEl.innerHTML = "";
       return;
     }
 
     mountEl.innerHTML = `
-      <div class="otpBox">
-        <div class="otpTitle">Mobile Verification (MSG91 OTP Widget)</div>
-        <div class="otpHint">Complete OTP verification here. After verification, consent/signature will be enabled.</div>
+      <div class="otpBox" id="otpBoxWrap">
+        <div class="otpTitle">Mobile Verification</div>
+        <div class="otpHint">Please verify your mobile number to enable consent and signature.</div>
 
         <div class="otpRow">
           <input id="otp_mobile" type="tel" placeholder="10-digit mobile number" inputmode="numeric" />
@@ -538,47 +551,45 @@
         </div>
 
         <div id="otp_msg" class="otpHint"></div>
-        
       </div>
     `;
 
     const $ = (id) => mountEl.querySelector("#" + id);
+    const wrap = $("otpBoxWrap");
     const setMsg = (html) => { const m = $("otp_msg"); if (m) m.innerHTML = html; };
-    
+
+    // Prevent double event binding when Survey rerenders
+    if (mountEl.dataset.bound === "1") return;
+    mountEl.dataset.bound = "1";
 
     $("otp_send").addEventListener("click", async () => {
       const mobile = ($("otp_mobile").value || "").trim();
       if (!/^[6-9]\d{9}$/.test(mobile)) { alert("Enter valid mobile number"); return; }
 
       try {
-        await loadMsg91OtpSdkOnce();
+        await loadMsg91OtpScript();
       } catch (e) {
-        setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`);
-       
+        setMsg(`<span class="otpBad">MSG91 OTP is not available. Please try again.</span>`);
         return;
       }
 
-      const identifier = COUNTRY_CODE + mobile;
-
       try {
+        // Store mobile (so it is saved in Sheets later)
+        survey.setValue("mobile_number", mobile);
+
+        const identifier = COUNTRY_CODE + mobile;
         window.sendOtp(
           identifier,
-          (data) => {
-            otpReqId = data?.reqId || data?.request_id || data?.requestId || "";
+          () => {
             $("otp_row2").style.display = "flex";
-            survey.setValue("mobile_number", mobile);
             setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
-            
           },
-          (err) => {
-            setMsg(`<span class="otpBad">OTP send failed.</span>`);
-            
-            alert("OTP send failed. See details below.");
+          () => {
+            setMsg(`<span class="otpBad">OTP send failed. Please try again.</span>`);
           }
         );
       } catch (e) {
-        setMsg(`<span class="otpBad">OTP send failed.</span>`);
-        
+        setMsg(`<span class="otpBad">OTP send failed. Please try again.</span>`);
       }
     });
 
@@ -589,58 +600,55 @@
       if (!/^\d{4,8}$/.test(otp)) { alert("Enter valid OTP"); return; }
 
       try {
-        await loadMsg91OtpSdkOnce();
+        await loadMsg91OtpScript();
       } catch (e) {
-        setMsg(`<span class="otpBad">MSG91 methods not available. Check widget/token.</span>`);
-        
+        setMsg(`<span class="otpBad">MSG91 OTP is not available. Please try again.</span>`);
         return;
       }
 
       try {
+        survey.setValue("mobile_number", mobile);
+
         window.verifyOtp(
           otp,
-          async (data) => {
-            
-            const token = extractAccessToken(data);
-
+          async (resp) => {
+            const token = extractJwtToken(resp);
             if (!token) {
-              setMsg(`<span class="otpBad">OTP verified, but access token not found.</span>`);
+              setMsg(`<span class="otpBad">OTP verified but token missing. Please retry.</span>`);
               return;
             }
 
-            // Server-side verify (Apps Script -> MSG91 verifyAccessToken)
+            // Server-side verify access-token via Apps Script (JSONP)
             try {
-              const v = await jsonp(GAS_URL, {
+              const v = await jsonpCall(GAS_URL, {
                 action: "verifyAccessToken",
                 mobile: mobile,
                 access_token: token
               });
 
               if (v && v.ok) {
+                // Mark verified, hide OTP box, enable consent/signature
                 survey.setValue("otpVerified", true);
                 survey.setValue("mobile_number", mobile);
+
+                if (wrap) wrap.style.display = "none";
+                mountEl.innerHTML = ""; // auto-hide after success
+
                 alert("Mobile verified. You can now sign the consent.");
-                survey.render();
+                survey.render(); // refresh enableIf
               } else {
-                setMsg(`<span class="otpBad">Server verification failed.</span>`);
-                
-                alert("Server verification failed. See details below.");
+                setMsg(`<span class="otpBad">Verification failed. Please retry.</span>`);
               }
             } catch (e) {
-              setMsg(`<span class="otpBad">Server verification failed (JSONP).</span>`);
-              
+              setMsg(`<span class="otpBad">Verification failed. Please retry.</span>`);
             }
           },
-          (err) => {
-            setMsg(`<span class="otpBad">OTP verify failed.</span>`);
-            
-            alert("OTP verify failed. See details below.");
-          },
-          otpReqId || undefined
+          () => {
+            setMsg(`<span class="otpBad">OTP verify failed. Please retry.</span>`);
+          }
         );
       } catch (e) {
-        setMsg(`<span class="otpBad">OTP verify failed.</span>`);
-        
+        setMsg(`<span class="otpBad">OTP verify failed. Please retry.</span>`);
       }
     });
   }
@@ -652,11 +660,12 @@
     }
   });
 
-  // Block leaving Consent page until verified
+  // Block moving away from Consent page until verified
   survey.onCurrentPageChanging.add((s, opt) => {
     const oldp = opt.oldCurrentPage;
     const newp = opt.newCurrentPage;
     if (!oldp || !newp) return;
+
     if (oldp.name === "page1" && newp.name !== "page1" && !s.getValue("otpVerified")) {
       opt.allowChanging = false;
       alert("Please verify your mobile number first.");
@@ -671,7 +680,7 @@
     }
   });
 
-  // Submit to Google Sheets (fire-and-forget)
+  /* ===================== SUBMIT TO SHEETS ===================== */
   survey.onComplete.add(async ({ data }) => {
     try {
       const mobile = String(survey.getValue("mobile_number") || "").trim();
@@ -682,6 +691,7 @@
         _meta: { ...meta, submittedAt: new Date().toISOString(), mobile }
       };
 
+      // fire-and-forget
       await fetch(SHEETS_WEB_APP_URL, {
         method: "POST",
         mode: "no-cors",
@@ -691,7 +701,6 @@
 
       alert("Thanks! Your response has been recorded.");
     } catch (err) {
-      console.error(err);
       alert("Submitted, but we couldn't confirm the save.");
     }
   });
@@ -700,4 +709,3 @@
 </script>
 </body>
 </html>
-
