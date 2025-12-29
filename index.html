@@ -85,7 +85,8 @@
   const MSG91_TOKEN_AUTH = "484544T7lf8amk695279ebP1";
   const COUNTRY_CODE = "91";
 
-  // ✅ IMPORTANT: persist access token from verifyOtp so it can be sent with survey submit
+  // ✅ NEW: keep verified values outside SurveyJS (SurveyJS can clear invisible values)
+  let VERIFIED_MOBILE = "";
   let VERIFIED_ACCESS_TOKEN = "";
   try { VERIFIED_ACCESS_TOKEN = localStorage.getItem("MSG91_ACCESS_TOKEN") || ""; } catch {}
 
@@ -174,7 +175,6 @@
             }
           } catch {}
           setTimeout(() => {
-            // exposeMethods:true should expose sendOtp/verifyOtp
             if (typeof window.sendOtp === "function" && typeof window.verifyOtp === "function") {
               _otpSdkReady = true;
               resolve();
@@ -195,7 +195,6 @@
     });
   }
 
-  // verifyOtp response contains JWT in `message` (your working extractor)
   function extractAccessToken(obj) {
     if (!obj) return "";
     return String(
@@ -208,10 +207,14 @@
     ).trim();
   }
 
-  /* ===================== FULL SURVEY JSON (all questions included) ===================== */
+  /* ===================== FULL SURVEY JSON (all questions) ===================== */
   const surveyJson = {
     "title": "Survey aimed at understanding the prescribing patterns & perspectives of Indian Gynaecologist for medical treatment to prevent Preterm birth.",
     "description": "Dear Doctor,\r\nProgesterone is commonly produced by the adrenal cortex, ovaries, testes, as well as by the ovarian corpus luteum during the first 10 weeks of pregnancy, followed by the placenta in the later phase of pregnancy. One of the primary responsibilities of progesterone throughout pregnancy is to maintain a decreased level of vascular tone in the myometrium. Low levels of progesterone are known to correlate with miscarriage and pre-term labor. Preterm birth / Preterm labor is the leading cause of perinatal morbidity and mortality worldwide, and its prevention is an important healthcare priority. The finding of a short cervix in the mid-trimester is a powerful risk factor for preterm delivery. The challenge of prediction and prevention of preterm birth has been difficult to address. Recent developments suggest that it is possible to identify a subset of patients at risk for preterm delivery, and to prevent this adverse pregnancy outcome with the use of progestogens. Various Progesterone are used to prevent preterm birth such as oral, vaginal in form of gel, suppositories, capsule, pessaries, Subcutaneous / Intramuscular injections. In this survey, we review an important conceptual framework about preterm birth – specifically, the role of progestogens to prevent preterm birth.\r\n\r\nWe are highly obliged to you for participating in this initiative.\r\nRegards,\r\nCipla\r\n",
+
+    // ✅ CRITICAL: do not clear values for hidden/invisible questions
+    "clearInvisibleValues": "none",
+
     "pages": [
       {
         "name": "page1",
@@ -567,10 +570,14 @@
           (data) => {
             otpReqId = data?.reqId || data?.request_id || data?.requestId || "";
             $("otp_row2").style.display = "flex";
+
+            // ✅ keep mobile in BOTH: SurveyJS + our safe variable
+            VERIFIED_MOBILE = mobile;
             survey.setValue("mobile_number", mobile);
+
             setMsg(`✅ OTP sent to <b>${mobile}</b>.`);
           },
-          (err) => {
+          () => {
             setMsg(`<span class="otpBad">OTP send failed.</span>`);
             alert("OTP send failed. Please try again.");
           }
@@ -598,17 +605,16 @@
           otp,
           async (data) => {
             const token = extractAccessToken(data);
-
             if (!token) {
               setMsg(`<span class="otpBad">OTP verified, but access token not found.</span>`);
               return;
             }
 
-            // ✅ NEW: save token for final submission payload
+            // ✅ keep token for submit
             VERIFIED_ACCESS_TOKEN = token;
             try { localStorage.setItem("MSG91_ACCESS_TOKEN", token); } catch {}
 
-            // Server-side verify (Apps Script -> MSG91 verifyAccessToken)
+            // Server-side verify
             try {
               const v = await jsonp(GAS_URL, {
                 action: "verifyAccessToken",
@@ -617,8 +623,11 @@
               });
 
               if (v && v.ok) {
-                survey.setValue("otpVerified", true);
+                // ✅ keep mobile in BOTH: SurveyJS + safe variable
+                VERIFIED_MOBILE = mobile;
                 survey.setValue("mobile_number", mobile);
+
+                survey.setValue("otpVerified", true);
                 alert("Mobile verified. You can now sign the consent.");
                 survey.render();
               } else {
@@ -630,7 +639,7 @@
               alert("Server verification failed (JSONP). Please retry.");
             }
           },
-          (err) => {
+          () => {
             setMsg(`<span class="otpBad">OTP verify failed.</span>`);
             alert("OTP verify failed. Please try again.");
           },
@@ -668,10 +677,10 @@
     }
   });
 
-  // Submit to Google Sheets (fire-and-forget)
+  // Submit to Google Sheets
   survey.onComplete.add(async ({ data }) => {
     try {
-      const mobile = String(survey.getValue("mobile_number") || "").trim();
+      const mobile = String(VERIFIED_MOBILE || survey.getValue("mobile_number") || "").trim();
       const meta = Object.fromEntries(new URLSearchParams(location.search).entries());
 
       const payload = {
@@ -680,7 +689,6 @@
           ...meta,
           submittedAt: new Date().toISOString(),
           mobile,
-          // ✅ NEW: send token so backend can reliably attach/store verified mobile
           access_token: VERIFIED_ACCESS_TOKEN
         }
       };
