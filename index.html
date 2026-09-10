@@ -257,7 +257,7 @@
           {
             "type": "radiogroup",
             "name": "question6",
-            "title": "2. In your practice, approximately what percentage of pregnancies need treatment for PREVENTION of pre-term delivery?",
+            "title": "2. In your practice, approximately what percentage of pregnancies need treatment for prevention of pre-term delivery?",
             "isRequired": true,
             "choices": [
               { "value": "Item 1", "text": "<10%" },
@@ -325,7 +325,8 @@
                   "Vaginal gel",
                   "Oral Progesterone",
                   "Dydrogesterone",
-                  "Injectable progesterone",
+                  "Aqueous Progesterone Injection",
+                  "IM progesterone",
                   "Injectable Hydroxy progesterone"
                 ],
                 "showOtherItem": true,
@@ -357,9 +358,9 @@
                   { "value": "400 mg BID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
                   { "value": "400 mg TID", "visibleIf": "{row.molecule} = 'Oral Progesterone' or {row.molecule} = 'Vaginal Natural micronized progesterone'" },
 
-                  { "value": "25 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
-                  { "value": "50 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
-                  { "value": "100 mg", "visibleIf": "{row.molecule} = 'Injectable progesterone'" },
+                  { "value": "25 mg", "visibleIf": "{row.molecule} = 'Aqueous Progesterone Injection'" },
+                  { "value": "50 mg", "visibleIf": "{row.molecule} = 'Aqueous Progesterone Injection' or {row.molecule} = 'IM progesterone'" },
+                  { "value": "100 mg", "visibleIf": "{row.molecule} = 'IM progesterone'" },
 
                   { "value": "250 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
                   { "value": "500 mg", "visibleIf": "{row.molecule} = 'Injectable Hydroxy progesterone'" },
@@ -437,7 +438,7 @@
           {
             "type": "checkbox",
             "name": "question13",
-            "title": "9. What are the considerations before prescribing progesterone for PREVENTION of Preterm birth? (select maximum 3 options)",
+            "title": "9. What are the considerations before prescribing progesterone for prevention of Preterm birth? (select maximum 3 options)",
             "isRequired": true,
             "choices": [
               { "value": "Item 1", "text": "Cost" },
@@ -483,7 +484,8 @@
             "minSelectedChoices": 1,
             "maxSelectedChoices": 1
           },
-          { "type": "text", "name": "question14", "title": "Address (City and State)", "isRequired": true }
+          { "type": "text", "name": "question14", "title": "City", "isRequired": true },
+          { "type": "dropdown", "name": "question15", "title": "State", "isRequired": true, "choices": ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu","Delhi","Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry"], "placeholder": "Select State" }
         ]
       }
     ],
@@ -666,8 +668,4 @@
 </script>
 </body>
 </html>
-
-
-
-
 
